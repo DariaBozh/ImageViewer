@@ -1,0 +1,14 @@
+# Ігноруємо папку збірки
+build/
+bin/
+obj/
+
+# Тимчасові файли CMake
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+
+# Специфічні файли ОС та редакторів
+.DS_Store
+.vscode/
+.idea/
