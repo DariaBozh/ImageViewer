@@ -29,6 +29,7 @@ public:
 
 	//Draw functions
 	void drawLine(QPoint start, QPoint end, QColor color, int algType = 0);
+	void drawCircle(QPoint start, QPoint end, QColor color);
 	void setDrawLineBegin(QPoint begin) { drawLineBegin = begin; }
 	QPoint getDrawLineBegin() { return drawLineBegin; }
 	void setDrawLineActivated(bool state) { drawLineActivated = state; }

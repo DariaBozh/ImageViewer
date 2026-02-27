@@ -4,12 +4,12 @@ ImageViewer::ImageViewer(QWidget* parent)
 	: QMainWindow(parent), ui(new Ui::ImageViewerClass)
 {
 	ui->setupUi(this);
-	vW = new ViewerWidget(QSize(500, 500), ui->scrollArea /*parent, do vnutra nieco vlozime*/);
-	ui->scrollArea->setWidget(vW); //vlozime platno
+	vW = new ViewerWidget(QSize(500, 500), ui->scrollArea /*Parent, do vnutra nieco vlozime*/);
+	ui->scrollArea->setWidget(vW); //Vlozime platno
 
-	ui->scrollArea->setBackgroundRole(QPalette::Dark); //pozadie
+	ui->scrollArea->setBackgroundRole(QPalette::Dark); //Pozadie
 	ui->scrollArea->setWidgetResizable(false);
-	ui->scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded); //zobrazia vtedy, ked potrebne
+	ui->scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded); //Zobrazia sa vtedy, ked potrebne
 	ui->scrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
 
 	vW->setObjectName("ViewerWidget");
@@ -62,14 +62,22 @@ bool ImageViewer::ViewerWidgetEventFilter(QObject* obj, QEvent* event)
 void ImageViewer::ViewerWidgetMouseButtonPress(ViewerWidget* w, QEvent* event)
 {
 	QMouseEvent* e = static_cast<QMouseEvent*>(event);
-	if (e->button() == Qt::LeftButton && ui->toolButtonDrawLine->isChecked()) //aby bol aktivny potrebny button
+	bool lineSelected = ui->toolButtonDrawLine->isChecked();
+	bool circleSelected = ui->toolButtonDrawCircle->isChecked();
+	
+	if (e->button() == Qt::LeftButton && (lineSelected || circleSelected)) //Corresponding button is pressed
 	{
 		if (w->getDrawLineActivated()) {
-			w->drawLine(w->getDrawLineBegin(), e->pos(), globalColor, ui->comboBoxLineAlg->currentIndex());
+			if (lineSelected){
+				w->drawLine(w->getDrawLineBegin(), e->pos(), globalColor, ui->comboBoxLineAlg->currentIndex());
+			}
+			else if (circleSelected) {
+				w->drawCircle(w->getDrawLineBegin(), e->pos(), globalColor);
+			}
 			w->setDrawLineActivated(false);
 		}
 		else {
-			w->setDrawLineBegin(e->pos()); //nastavim prvy bod
+			w->setDrawLineBegin(e->pos()); //First point
 			w->setDrawLineActivated(true);
 			w->setPixel(e->pos().x(), e->pos().y(), globalColor);
 			w->update();
@@ -171,6 +179,16 @@ void ImageViewer::on_actionClear_triggered()
 void ImageViewer::on_actionExit_triggered()
 {
 	this->close();
+}
+
+//Added for reseting active state (selecting another drawing option)
+void ImageViewer::on_toolButtonDrawLine_clicked()
+{
+	vW->setDrawLineActivated(false);
+}
+void ImageViewer::on_toolButtonDrawCircle_clicked()
+{
+	vW->setDrawLineActivated(false);
 }
 
 void ImageViewer::on_pushButtonSetColor_clicked()

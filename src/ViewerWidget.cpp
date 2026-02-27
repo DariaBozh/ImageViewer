@@ -119,18 +119,54 @@ void ViewerWidget::drawLine(QPoint start, QPoint end, QColor color, int algType)
 {
 	if (!img || !data) return;
 
-	/*if (algType == 0) {
+	if (algType == 0) {
 		drawLineDDA(start, end, color);
 	}
 	else {
 		drawLineBresenham(start, end, color);
 	}
-	update();*/
+	update();
 
 	//Po implementovani drawLineDDA a drawLineBresenham treba vymazat
-	QPainter painter(img);
+	/*QPainter painter(img);
 	painter.setPen(QPen(color));
 	painter.drawLine(start, end);
+	update();*/
+}
+void ViewerWidget::drawCircle(QPoint start, QPoint end, QColor color) //Ñelociselny
+{ 
+	if (!img || !data) return;
+
+	int radius = static_cast<int>(sqrt(pow(end.x() - start.x(), 2) + pow(end.y() - start.y(), 2)));
+
+	int p = 1 - radius;
+	int x = 0;
+	int y = radius;
+	int twoX = 3;
+	int twoY = 2 * radius - 2;
+
+	int x0 = start.x();
+	int y0 = start.y();
+
+	while (x <= y) { // 45 stupnov
+		setPixel(x0 + x,y0 + y, color);
+		setPixel(x0 + x, y0 - y, color);
+		setPixel(x0 - x, y0 + y, color);
+		setPixel(x0 - x, y0 - y, color);
+		setPixel(x0 + y, y0 + x, color);
+		setPixel(x0 + y, y0 - x, color);
+		setPixel(x0 - y, y0 + x, color);
+		setPixel(x0 - y, y0 - x, color);
+
+		if (p > 0) {
+			p -= twoY;
+			y--;
+			twoY -= 2;
+		}
+		p += twoX;
+		twoX += 2;
+		x++;
+	}
 	update();
 }
 
@@ -143,10 +179,87 @@ void ViewerWidget::clear()
 
 void ViewerWidget::drawLineDDA(QPoint start, QPoint end, QColor color)
 {
-}
+	double x0 = start.x();
+	double y0 = start.y();
+	double x1 = end.x();
+	double y1 = end.y();
 
+	double dx = x1 - x0;
+	double dy = y1 - y0;
+	double steps = std::max(abs(dx), abs(dy));
+	double xInk, yInk;
+
+	if (steps != 0) { //double m = dy / dx;
+		xInk = dx / steps;
+		yInk = dy / steps;
+	}
+	else {
+		setPixel(x0, y0, color);
+		return;
+	}
+
+	for (int i = 0; i < steps; i++) {
+		setPixel((int)(x0 + 0.5), (int)(y0 + 0.5), color);
+		//pripadne nieco z toho urcite je 1
+		x0 += xInk;
+		y0 += yInk;
+	}
+
+	setPixel((int)(x1 + 0.5), (int)(y1 + 0.5), color); //posledny
+	
+}
 void ViewerWidget::drawLineBresenham(QPoint start, QPoint end, QColor color)
 {
+	int x0 = start.x();
+	int y0 = start.y();
+	int x1 = end.x();
+	int y1 = end.y();
+
+	int adx = abs(x1 - x0);
+	int ady = abs(y1 - y0);
+
+	int k1, k2, p; // p je chyba
+
+	int stepX = (x1 > x0) ? 1 : -1;
+	int stepY = (y1 > y0) ? 1 : -1;
+
+	if (adx >= ady) { //hlavna je os x
+		k1 = 2 * ady;
+		k2 = k1 - 2 * adx;
+		p = k1 - adx;
+
+		for (int i = 0; i <= adx; i++) {
+			setPixel(x0, y0, color);
+
+			if (p > 0) {
+				y0 += stepY;
+				p += k2;
+			}
+			else {
+				p += k1;
+			}
+			x0 += stepX;
+		}
+	}
+	else if (ady > adx) { //hlavna je os y
+		k1 = 2 * adx;
+		k2 = k1 - 2 * ady;
+		p = k1 - ady;
+
+		for (int i = 0; i <= ady; i++) {
+			setPixel(x0, y0, color);
+			
+			if (p > 0) {
+				x0 += stepX;
+				p += k2;
+			}
+			else {
+				p += k1;
+			}
+			y0 += stepY;
+		}
+	}
+
 }
 
 //Slots

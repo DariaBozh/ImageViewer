@@ -14,7 +14,7 @@ public:
 	~ImageViewer() { delete ui; }
 private:
 	Ui::ImageViewerClass* ui;
-	ViewerWidget* vW; //kazdy imViewer obsahuje jeden viewerWidget
+	ViewerWidget* vW; //Kazdy imViewer obsahuje jeden viewerWidget
 
 	QColor globalColor;
 	QSettings settings;
@@ -44,6 +44,10 @@ private slots:
 	void on_actionSave_as_triggered();
 	void on_actionClear_triggered();
 	void on_actionExit_triggered();
+
+	//Added for reseting active state (selecting another drawing option)
+	void on_toolButtonDrawLine_clicked();
+	void on_toolButtonDrawCircle_clicked();
 
 	//Tools slots
 	void on_pushButtonSetColor_clicked();
