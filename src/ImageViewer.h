@@ -45,6 +45,9 @@ private slots:
 	void on_actionClear_triggered();
 	void on_actionExit_triggered();
 
+	void on_pushButtonClearObject_clicked();
+	void on_pushButtonRotate_clicked();
+
 	//Added for reseting active state (selecting another drawing option)
 	void on_toolButtonDrawLine_clicked();
 	void on_toolButtonDrawCircle_clicked();

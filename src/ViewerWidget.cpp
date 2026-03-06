@@ -133,11 +133,11 @@ void ViewerWidget::drawLine(QPoint start, QPoint end, QColor color, int algType)
 	painter.drawLine(start, end);
 	update();*/
 }
-void ViewerWidget::drawCircle(QPoint start, QPoint end, QColor color) //Ñelociselny
+void ViewerWidget::drawCircle(QPoint center, QPoint radiusLen, QColor color) //Ñelociselny
 { 
 	if (!img || !data) return;
 
-	int radius = static_cast<int>(sqrt(pow(end.x() - start.x(), 2) + pow(end.y() - start.y(), 2)));
+	int radius = static_cast<int>(sqrt(pow(radiusLen.x() - center.x(), 2) + pow(radiusLen.y() - center.y(), 2)));
 
 	int p = 1 - radius;
 	int x = 0;
@@ -145,8 +145,8 @@ void ViewerWidget::drawCircle(QPoint start, QPoint end, QColor color) //Ñelocise
 	int twoX = 3;
 	int twoY = 2 * radius - 2;
 
-	int x0 = start.x();
-	int y0 = start.y();
+	int x0 = center.x();
+	int y0 = center.y();
 
 	while (x <= y) { // 45 stupnov
 		setPixel(x0 + x,y0 + y, color);
@@ -168,6 +168,63 @@ void ViewerWidget::drawCircle(QPoint start, QPoint end, QColor color) //Ñelocise
 		x++;
 	}
 	update();
+}
+void ViewerWidget::drawPolygon(QVector<QPoint> points, QColor color, int algType)
+{
+	if (points.size() < 2) return;
+
+	for (int i = 0; i < points.size() - 1; i++) { // äî ïåðåäîñòàííüî¿ òî÷êè 
+		drawLine(points[i], points[i + 1], color, algType);
+	}
+
+	if (points.size() > 2) {
+		drawLine(points[points.size() - 1], points[0], color, algType); //abo last-first
+	}
+}
+
+void ViewerWidget::addPolygonPoint(QPoint point)
+{
+	polygonPoints.append(point);
+}
+void ViewerWidget::closePolygon(QColor color, int algType)
+{
+	if (polygonPoints.size() < 3) return;
+
+	QPoint endpoint = polygonPoints.last();
+	QPoint startpoint = polygonPoints.first();
+	drawLine(endpoint, startpoint, color, algType);
+}
+void ViewerWidget::clearObject()
+{
+	polygonPoints.clear();
+	drawPolygonActivated = false;
+	clear();
+}
+
+QVector<QPoint> ViewerWidget::rotation(const QVector<QPoint>& points, double a)
+{
+	if (points.isEmpty()) return points;
+
+	QVector<QPoint> newPoints;
+	QPoint center = points[0];
+
+	double rad = a * M_PI / 180.0;
+	double cosA = cos(rad);
+	double sinA = sin(rad);
+
+	double x0 = center.x();
+	double y0 = center.y();
+
+	for (int i = 0; i < points.size(); i++) {
+		double x = points[i].x();
+		double y = points[i].y();
+
+		int xNew = qRound((x - x0) * cosA - (y - y0) * sinA + x0);
+		int yNew = qRound((x - x0) * sinA + (y - y0) * cosA + y0);
+		
+		newPoints.append(QPoint(xNew, yNew));
+	}
+	return newPoints;
 }
 
 void ViewerWidget::clear()

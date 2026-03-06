@@ -64,12 +64,15 @@ void ImageViewer::ViewerWidgetMouseButtonPress(ViewerWidget* w, QEvent* event)
 	QMouseEvent* e = static_cast<QMouseEvent*>(event);
 	bool lineSelected = ui->toolButtonDrawLine->isChecked();
 	bool circleSelected = ui->toolButtonDrawCircle->isChecked();
+	bool polygonSelected = ui->toolButtonDrawPolygon->isChecked();
 	
-	if (e->button() == Qt::LeftButton && (lineSelected || circleSelected)) //Corresponding button is pressed
+	//Line or circle
+	if (e->button() == Qt::LeftButton && (lineSelected || circleSelected )) //Corresponding button is pressed
 	{
 		if (w->getDrawLineActivated()) {
 			if (lineSelected){
 				w->drawLine(w->getDrawLineBegin(), e->pos(), globalColor, ui->comboBoxLineAlg->currentIndex());
+				w->addPolygonPoint(e->pos());
 			}
 			else if (circleSelected) {
 				w->drawCircle(w->getDrawLineBegin(), e->pos(), globalColor);
@@ -79,10 +82,43 @@ void ImageViewer::ViewerWidgetMouseButtonPress(ViewerWidget* w, QEvent* event)
 		else {
 			w->setDrawLineBegin(e->pos()); //First point
 			w->setDrawLineActivated(true);
+
+			w->clearObject();
+			w->addPolygonPoint(e->pos());
+
 			w->setPixel(e->pos().x(), e->pos().y(), globalColor);
 			w->update();
 		}
 	}
+
+	//Polygon
+	if (polygonSelected) {
+
+		if (e->button() == Qt::LeftButton) {
+
+			if (!w->getDrawPolygonActivated()) {
+				w->clearObject();
+				w->setDrawPolygonActivated(true);
+			}
+
+			w->addPolygonPoint(e->pos());
+			int size = w->getPolygonPoints().size();
+
+			if (size > 1) {
+				w->drawLine(w->getPolygonPoints()[size - 2], e->pos(), globalColor, ui->comboBoxLineAlg->currentIndex());
+			}
+			else {
+				w->setPixel(e->pos().x(), e->pos().y(), globalColor);
+				w->update();
+			}
+		}
+
+		else if (e->button() == Qt::RightButton) {
+			w->closePolygon(globalColor, ui->comboBoxLineAlg->currentIndex());
+			w->setDrawPolygonActivated(false);
+		}
+	}
+
 }
 void ImageViewer::ViewerWidgetMouseButtonRelease(ViewerWidget* w, QEvent* event)
 {
@@ -189,6 +225,24 @@ void ImageViewer::on_toolButtonDrawLine_clicked()
 void ImageViewer::on_toolButtonDrawCircle_clicked()
 {
 	vW->setDrawLineActivated(false);
+}
+
+void ImageViewer::on_pushButtonClearObject_clicked()
+{
+	vW->clearObject();
+	vW->update();
+}
+void ImageViewer::on_pushButtonRotate_clicked()
+{
+	if (vW->getPolygonPoints().isEmpty()) return;
+
+	double angle = ui->SpinBoxDegreesRotate->value();
+	QVector<QPoint> polygonRotated = vW->rotation(vW->getPolygonPoints(), angle);
+	vW->setPolygonPoints(polygonRotated);
+
+	vW->clear();
+	vW->drawPolygon(polygonRotated, globalColor, ui->comboBoxLineAlg->currentIndex());
+	vW->update();
 }
 
 void ImageViewer::on_pushButtonSetColor_clicked()
