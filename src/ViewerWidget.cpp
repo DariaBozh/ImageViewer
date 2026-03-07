@@ -171,6 +171,7 @@ void ViewerWidget::drawCircle(QPoint center, QPoint radiusLen, QColor color) //С
 }
 void ViewerWidget::drawPolygon(QVector<QPoint> points, QColor color, int algType)
 {
+	//qDebug() << "Drawing points count:" << points.size();
 	if (points.size() < 2) return;
 
 	for (int i = 0; i < points.size() - 1; i++) { // до передостанньої точки 
@@ -185,6 +186,7 @@ void ViewerWidget::drawPolygon(QVector<QPoint> points, QColor color, int algType
 void ViewerWidget::addPolygonPoint(QPoint point)
 {
 	polygonPoints.append(point);
+	transformedPoints = polygonPoints; //synchronization
 }
 void ViewerWidget::closePolygon(QColor color, int algType)
 {
@@ -197,6 +199,7 @@ void ViewerWidget::closePolygon(QColor color, int algType)
 void ViewerWidget::clearObject()
 {
 	polygonPoints.clear();
+	transformedPoints.clear();
 	drawPolygonActivated = false;
 	clear();
 }
@@ -222,6 +225,44 @@ QVector<QPoint> ViewerWidget::rotation(const QVector<QPoint>& points, double a)
 		int xNew = qRound((x - x0) * cosA - (y - y0) * sinA + x0);
 		int yNew = qRound((x - x0) * sinA + (y - y0) * cosA + y0);
 		
+		newPoints.append(QPoint(xNew, yNew));
+	}
+	return newPoints;
+}
+QVector<QPoint> ViewerWidget::scale(const QVector<QPoint>& points, double dx, double dy)
+{
+	if (points.isEmpty()) return points;
+
+	QVector<QPoint> newPoints;
+	QPoint center = points[0];
+	double x0 = center.x();
+	double y0 = center.y();
+
+	for (int i = 0; i < points.size(); i++) {
+		double x = points[i].x() - x0;
+		double y = points[i].y() - y0;
+
+		int xNew = qRound(x0 + dx * x);
+		int yNew = qRound(y0 + dy * y);
+		newPoints.append(QPoint(xNew, yNew));
+	}
+
+	return newPoints;
+}
+QVector<QPoint> ViewerWidget::share(const QVector<QPoint>& points, double d)
+{
+	if (points.isEmpty()) return points;
+	QVector<QPoint> newPoints;
+
+	QPoint center = points[0];
+	double y0 = center.y();
+
+	for (int i = 0; i < points.size(); i++) {
+		double x = points[i].x();
+		double y = points[i].y();
+
+		int xNew = qRound(x + d * (y - y0));
+		int yNew = y;
 		newPoints.append(QPoint(xNew, yNew));
 	}
 	return newPoints;

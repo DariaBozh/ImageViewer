@@ -105,7 +105,7 @@ void ImageViewer::ViewerWidgetMouseButtonPress(ViewerWidget* w, QEvent* event)
 			int size = w->getPolygonPoints().size();
 
 			if (size > 1) {
-				w->drawLine(w->getPolygonPoints()[size - 2], e->pos(), globalColor, ui->comboBoxLineAlg->currentIndex());
+				w->drawLine(w->getTransformedPoints()[size - 2], e->pos(), globalColor, ui->comboBoxLineAlg->currentIndex());
 			}
 			else {
 				w->setPixel(e->pos().x(), e->pos().y(), globalColor);
@@ -114,8 +114,10 @@ void ImageViewer::ViewerWidgetMouseButtonPress(ViewerWidget* w, QEvent* event)
 		}
 
 		else if (e->button() == Qt::RightButton) {
+			w->setTransformedPoints(w->getPolygonPoints()); // Ініціалізуємо робочий вектор
 			w->closePolygon(globalColor, ui->comboBoxLineAlg->currentIndex());
 			w->setDrawPolygonActivated(false);
+			w->update();
 		}
 	}
 
@@ -136,7 +138,23 @@ void ImageViewer::ViewerWidgetEnter(ViewerWidget* w, QEvent* event)
 }
 void ImageViewer::ViewerWidgetWheel(ViewerWidget* w, QEvent* event)
 {
-	QWheelEvent* wheelEvent = static_cast<QWheelEvent*>(event);
+	QWheelEvent* wheelEvent = static_cast<QWheelEvent*>(event); // returns angleDelta() with QPoint type
+	if (w->getTransformedPoints().isEmpty()) return;
+
+	double scaleFactor = 1;
+	if (wheelEvent->angleDelta().y() > 0) {
+		scaleFactor *= 1.25; //upward
+	}
+	else {
+		scaleFactor *= 0.75; //downward
+	}
+	
+	QVector<QPoint> scaled = w->scale(w->getTransformedPoints(), scaleFactor, scaleFactor);
+	w->setTransformedPoints(scaled);
+	
+	w->clear();
+	w->drawPolygon(scaled, globalColor, ui->comboBoxLineAlg->currentIndex());
+	w->update();
 }
 
 //ImageViewer Events
@@ -234,15 +252,45 @@ void ImageViewer::on_pushButtonClearObject_clicked()
 }
 void ImageViewer::on_pushButtonRotate_clicked()
 {
-	if (vW->getPolygonPoints().isEmpty()) return;
-
+	if (vW->getTransformedPoints().isEmpty()) return;
 	double angle = ui->SpinBoxDegreesRotate->value();
-	QVector<QPoint> polygonRotated = vW->rotation(vW->getPolygonPoints(), angle);
-	vW->setPolygonPoints(polygonRotated);
-
+	
+	QVector<QPoint> polygonRotated = vW->rotation(vW->getTransformedPoints(), angle);
+	vW->setTransformedPoints(polygonRotated);
+	
 	vW->clear();
-	vW->drawPolygon(polygonRotated, globalColor, ui->comboBoxLineAlg->currentIndex());
+	vW->drawPolygon(vW->getTransformedPoints(), globalColor, ui->comboBoxLineAlg->currentIndex());
 	vW->update();
+
+}
+void ImageViewer::on_pushButtonScale_clicked()
+{
+	if (vW->getTransformedPoints().isEmpty()) return;
+
+	double dx = ui->dsb_xScale->value();
+	double dy = ui->dsb_yScale->value();
+
+	QVector<QPoint> polygonScaled = vW->scale(vW->getTransformedPoints(), dx, dy);
+	vW->setTransformedPoints(polygonScaled);
+	
+	vW->clear();
+	vW->drawPolygon(vW->getTransformedPoints(), globalColor, ui->comboBoxLineAlg->currentIndex());
+	vW->update();
+
+}
+void ImageViewer::on_pushButtonSlope_clicked()
+{
+	if (vW->getTransformedPoints().isEmpty()) return;
+
+	double d = ui->dsb_Slope->value();
+	
+	QVector<QPoint> polygonSloped = vW->share(vW->getTransformedPoints(), d);
+	vW->setTransformedPoints(polygonSloped);
+	
+	vW->clear();
+	vW->drawPolygon(vW->getTransformedPoints(), globalColor, ui->comboBoxLineAlg->currentIndex());
+	vW->update();
+
 }
 
 void ImageViewer::on_pushButtonSetColor_clicked()

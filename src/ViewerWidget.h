@@ -13,6 +13,7 @@ private:
 	QPoint drawLineBegin = QPoint(0, 0);
 
 	QVector<QPoint> polygonPoints;
+	QVector<QPoint> transformedPoints;
 	bool drawPolygonActivated = false;
 
 public:
@@ -42,8 +43,12 @@ public:
 	bool getDrawLineActivated() { return drawLineActivated; }
 
 	void addPolygonPoint(QPoint point);
-	QVector<QPoint> getPolygonPoints() { return polygonPoints; }
 	void setPolygonPoints(QVector<QPoint> points) { polygonPoints = points; };
+	QVector<QPoint> getPolygonPoints() { return polygonPoints; }
+	
+	void setTransformedPoints(const QVector<QPoint>& tpoints) { transformedPoints = tpoints; }
+	QVector<QPoint> getTransformedPoints() { return transformedPoints; }
+	
 	void setDrawPolygonActivated(bool state) { drawPolygonActivated = state; }
 	bool getDrawPolygonActivated() { return drawPolygonActivated; }
 	void closePolygon(QColor color, int algType = 0);

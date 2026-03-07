@@ -47,6 +47,8 @@ private slots:
 
 	void on_pushButtonClearObject_clicked();
 	void on_pushButtonRotate_clicked();
+	void on_pushButtonScale_clicked();
+	void on_pushButtonSlope_clicked();
 
 	//Added for reseting active state (selecting another drawing option)
 	void on_toolButtonDrawLine_clicked();
