@@ -66,6 +66,13 @@ void ImageViewer::ViewerWidgetMouseButtonPress(ViewerWidget* w, QEvent* event)
 	bool circleSelected = ui->toolButtonDrawCircle->isChecked();
 	bool polygonSelected = ui->toolButtonDrawPolygon->isChecked();
 	
+	//Dragging
+	if (e->button() == Qt::LeftButton && !w->getDrawPolygonActivated() && !w->getDrawLineActivated() && !w->getTransformedPoints().isEmpty()) {
+		isDragging = true;
+		setLastMousePos(e->pos().x(), e->pos().y());
+		return;
+	}
+
 	//Line or circle
 	if (e->button() == Qt::LeftButton && (lineSelected || circleSelected )) //Corresponding button is pressed
 	{
@@ -125,10 +132,23 @@ void ImageViewer::ViewerWidgetMouseButtonPress(ViewerWidget* w, QEvent* event)
 void ImageViewer::ViewerWidgetMouseButtonRelease(ViewerWidget* w, QEvent* event)
 {
 	QMouseEvent* e = static_cast<QMouseEvent*>(event);
+
+	if (e->button() == Qt::LeftButton) {
+		isDragging = false;
+	}
+
 }
 void ImageViewer::ViewerWidgetMouseMove(ViewerWidget* w, QEvent* event)
 {
 	QMouseEvent* e = static_cast<QMouseEvent*>(event);
+	
+	if (isDragging) {
+		w->displacement(getLastMousePos(), e->pos(), w->getTransformedPoints());
+		setLastMousePos(e->pos().x(), e->pos().y());
+
+		updateCanvas(w);
+	}
+
 }
 void ImageViewer::ViewerWidgetLeave(ViewerWidget* w, QEvent* event)
 {
@@ -185,6 +205,13 @@ bool ImageViewer::saveImage(QString filename)
 
 	QImage* img = vW->getImage();
 	return img->save(filename, extension.toStdString().c_str());
+}
+
+void ImageViewer::updateCanvas(ViewerWidget* w)
+{ // Draws new polygon(or line) when we moving it or 
+	w->clear();
+	w->drawPolygon(w->getTransformedPoints(), globalColor, ui->comboBoxLineAlg->currentIndex());
+	w->update();
 }
 
 //Slots
@@ -258,9 +285,7 @@ void ImageViewer::on_pushButtonRotate_clicked()
 	QVector<QPoint> polygonRotated = vW->rotation(vW->getTransformedPoints(), angle);
 	vW->setTransformedPoints(polygonRotated);
 	
-	vW->clear();
-	vW->drawPolygon(vW->getTransformedPoints(), globalColor, ui->comboBoxLineAlg->currentIndex());
-	vW->update();
+	updateCanvas(vW);
 
 }
 void ImageViewer::on_pushButtonScale_clicked()
@@ -273,9 +298,7 @@ void ImageViewer::on_pushButtonScale_clicked()
 	QVector<QPoint> polygonScaled = vW->scale(vW->getTransformedPoints(), dx, dy);
 	vW->setTransformedPoints(polygonScaled);
 	
-	vW->clear();
-	vW->drawPolygon(vW->getTransformedPoints(), globalColor, ui->comboBoxLineAlg->currentIndex());
-	vW->update();
+	updateCanvas(vW);
 
 }
 void ImageViewer::on_pushButtonSlope_clicked()
@@ -287,9 +310,7 @@ void ImageViewer::on_pushButtonSlope_clicked()
 	QVector<QPoint> polygonSloped = vW->share(vW->getTransformedPoints(), d);
 	vW->setTransformedPoints(polygonSloped);
 	
-	vW->clear();
-	vW->drawPolygon(vW->getTransformedPoints(), globalColor, ui->comboBoxLineAlg->currentIndex());
-	vW->update();
+	updateCanvas(vW);
 
 }
 

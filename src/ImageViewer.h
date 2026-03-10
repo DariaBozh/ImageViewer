@@ -12,6 +12,9 @@ class ImageViewer : public QMainWindow
 public:
 	ImageViewer(QWidget* parent = Q_NULLPTR);
 	~ImageViewer() { delete ui; }
+
+	void setLastMousePos(int newX, int newY) { lastMousePos.setX(newX); lastMousePos.setY(newY);  }
+	QPoint getLastMousePos() { return lastMousePos; }
 private:
 	Ui::ImageViewerClass* ui;
 	ViewerWidget* vW; //Kazdy imViewer obsahuje jeden viewerWidget
@@ -19,6 +22,9 @@ private:
 	QColor globalColor;
 	QSettings settings;
 	QMessageBox msgBox;
+
+	QPoint lastMousePos;
+	bool isDragging = false;
 
 	//Event filters
 	bool eventFilter(QObject* obj, QEvent* event);
@@ -38,6 +44,8 @@ private:
 	//Image functions
 	bool openImage(QString filename);
 	bool saveImage(QString filename);
+
+	void updateCanvas(ViewerWidget* w);
 
 private slots:
 	void on_actionOpen_triggered();

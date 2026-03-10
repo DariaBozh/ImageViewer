@@ -267,6 +267,26 @@ QVector<QPoint> ViewerWidget::share(const QVector<QPoint>& points, double d)
 	}
 	return newPoints;
 }
+QVector<QPoint> ViewerWidget::displacement(QPoint origin, QPoint newP, const QVector<QPoint>& points)
+{
+	if (points.isEmpty()) return points;
+	QVector<QPoint> newPoints;
+
+	double dx = newP.x() - origin.x();
+	double dy = newP.y() - origin.y();
+
+	for (int i = 0; i < points.size(); i++) {
+		double newX = points[i].x() + dx;
+		double newY = points[i].y() + dy;
+		newPoints.append(QPoint(newX, newY));
+	}
+
+	setTransformedPoints(newPoints);
+	setPolygonPoints(newPoints);
+	update();
+
+	return newPoints;
+}
 
 void ViewerWidget::clear()
 {
