@@ -204,6 +204,32 @@ void ViewerWidget::clearObject()
 	clear();
 }
 
+void ViewerWidget::drawObject(QColor color, int algType)
+{
+	if (transformedPoints.isEmpty()) return;
+
+	switch (currentObjectType) {
+	case ObjectType::Line: {
+		if (transformedPoints.size() >= 2) {
+			QVector<QPoint> clipped = clipLine(transformedPoints[0], transformedPoints[1]);
+			if (!clipped.isEmpty()) {
+				drawLine(clipped[0], clipped[1], color, algType);
+			}
+		}
+		break;
+	}
+	case ObjectType::Polygon: {
+		QVector<QPoint> clipped = clipPolygon(transformedPoints);
+		if (!clipped.isEmpty()) {
+			drawPolygon(clipped, color, algType);
+		}
+		break;
+	}
+	default: break;
+	}
+
+}
+
 QVector<QPoint> ViewerWidget::rotation(const QVector<QPoint>& points, double a, QPoint origin)
 {
 	if (points.isEmpty()) return points;

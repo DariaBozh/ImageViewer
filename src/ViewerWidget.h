@@ -2,6 +2,10 @@
 #include <QtWidgets>
 #include <math.h>
 
+enum class ObjectType {
+	None, Line, Polygon, Circle //Curve
+};
+
 class ViewerWidget :public QWidget {
 	Q_OBJECT
 private:
@@ -10,13 +14,16 @@ private:
 	uchar* data = nullptr; //pre pristup
 
 	bool drawLineActivated = false;
+	bool drawPolygonActivated = false;
 	QPoint drawLineBegin = QPoint(0, 0);
 
 	QVector<QPoint> polygonPoints;
 	QVector<QPoint> transformedPoints;
-	bool drawPolygonActivated = false;
+
+	ObjectType currentObjectType = ObjectType::None; 
 
 public:
+
 	ViewerWidget(QSize imgSize, QWidget* parent = Q_NULLPTR);
 	~ViewerWidget();
 	void resizeWidget(QSize size);
@@ -44,15 +51,17 @@ public:
 
 	void addPolygonPoint(QPoint point);
 	void setPolygonPoints(QVector<QPoint> points) { polygonPoints = points; };
-	QVector<QPoint> getPolygonPoints() { return polygonPoints; }
-	
 	void setTransformedPoints(const QVector<QPoint>& tpoints) { transformedPoints = tpoints; }
+	QVector<QPoint> getPolygonPoints() { return polygonPoints; }
 	QVector<QPoint> getTransformedPoints() { return transformedPoints; }
-	
+		
 	void setDrawPolygonActivated(bool state) { drawPolygonActivated = state; }
 	bool getDrawPolygonActivated() { return drawPolygonActivated; }
 	void closePolygon(QColor color, int algType = 0);
 	void clearObject();
+
+	void setObjectType(ObjectType type) { currentObjectType = type; }
+	void drawObject(QColor color, int algType);
 
 	//Transformation functions
 	QVector<QPoint> rotation(const QVector<QPoint>& points, double a, QPoint origin = QPoint(0,0));

@@ -85,6 +85,7 @@ void ImageViewer::ViewerWidgetMouseButtonPress(ViewerWidget* w, QEvent* event)
 				w->drawCircle(w->getDrawLineBegin(), e->pos(), globalColor);
 			}
 			w->setDrawLineActivated(false);
+			w->setObjectType(ObjectType::Line);
 		}
 		else {
 			w->setDrawLineBegin(e->pos()); //First point
@@ -124,6 +125,7 @@ void ImageViewer::ViewerWidgetMouseButtonPress(ViewerWidget* w, QEvent* event)
 			w->setTransformedPoints(w->getPolygonPoints()); // Ініціалізуємо робочий вектор
 			w->closePolygon(globalColor, ui->comboBoxLineAlg->currentIndex());
 			w->setDrawPolygonActivated(false);
+			w->setObjectType(ObjectType::Polygon);
 			w->update();
 		}
 	}
@@ -208,26 +210,10 @@ bool ImageViewer::saveImage(QString filename)
 }
 
 void ImageViewer::updateCanvas(ViewerWidget* w)
-{ // Draws new polygon(or line) when we moving it or transforming
+{ 
 	w->clear();
-
-	if (w->getTransformedPoints().size() == 2) {
-		QPoint p1 = w->getTransformedPoints()[0];
-		QPoint p2 = w->getTransformedPoints()[1];
-
-		QVector<QPoint> clipped = w->clipLine(p1, p2);
-
-		if (!clipped.isEmpty()) {
-			w->drawLine(clipped[0], clipped[1], globalColor, ui->comboBoxLineAlg->currentIndex());
-		}
-	}
-	else if (w->getTransformedPoints().size() > 2) {
-		QVector<QPoint> clippedPolygon = w->clipPolygon(w->getTransformedPoints());
-		if (!clippedPolygon.isEmpty()) {
-			w->drawPolygon(clippedPolygon, globalColor, ui->comboBoxLineAlg->currentIndex());
-		}
-		w->update();
-	}
+	w->drawObject(globalColor, ui->comboBoxLineAlg->currentIndex()); 
+	w->update();
 }
 
 //Slots
@@ -272,6 +258,7 @@ void ImageViewer::on_actionSave_as_triggered()
 void ImageViewer::on_actionClear_triggered()
 {
 	vW->clear();
+	vW->setObjectType(ObjectType::None);
 }
 void ImageViewer::on_actionExit_triggered()
 {
@@ -291,6 +278,7 @@ void ImageViewer::on_toolButtonDrawCircle_clicked()
 void ImageViewer::on_pushButtonClearObject_clicked()
 {
 	vW->clearObject();
+	vW->setObjectType(ObjectType::None);
 	vW->update();
 }
 void ImageViewer::on_pushButtonRotate_clicked()
