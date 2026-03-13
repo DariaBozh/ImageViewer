@@ -55,11 +55,15 @@ public:
 	void clearObject();
 
 	//Transformation functions
-	QVector<QPoint> rotation(const QVector<QPoint>& points, double a);
+	QVector<QPoint> rotation(const QVector<QPoint>& points, double a, QPoint origin = QPoint(0,0));
 	QVector<QPoint> scale(const QVector<QPoint>& points, double dx, double dy);
 	QVector<QPoint> share(const QVector<QPoint>& points, double d);
 	QVector<QPoint> symmetry(QPoint A, QPoint B, const QVector<QPoint>& points);
 	QVector<QPoint> displacement(QPoint origin, QPoint newP, const QVector<QPoint>& points);
+	
+	QVector<QPoint> clipLine(QPoint P1, QPoint P2);
+	QVector<QPoint> clipPolygon(const QVector<QPoint>& points);
+	QVector<QPoint> clipWithEdge(const QVector<QPoint>& points, double xmin);
 
 	//Get/Set functions
 	uchar* getData() { return data; }

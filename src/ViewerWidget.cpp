@@ -1,4 +1,4 @@
-#include   "ViewerWidget.h"
+﻿#include   "ViewerWidget.h"
 
 ViewerWidget::ViewerWidget(QSize imgSize, QWidget* parent)
 	: QWidget(parent)
@@ -133,7 +133,7 @@ void ViewerWidget::drawLine(QPoint start, QPoint end, QColor color, int algType)
 	painter.drawLine(start, end);
 	update();*/
 }
-void ViewerWidget::drawCircle(QPoint center, QPoint radiusLen, QColor color) //�elociselny
+void ViewerWidget::drawCircle(QPoint center, QPoint radiusLen, QColor color) //Сelociselny
 { 
 	if (!img || !data) return;
 
@@ -174,7 +174,7 @@ void ViewerWidget::drawPolygon(QVector<QPoint> points, QColor color, int algType
 	//qDebug() << "Drawing points count:" << points.size();
 	if (points.size() < 2) return;
 
-	for (int i = 0; i < points.size() - 1; i++) { // �� ������������� ����� 
+	for (int i = 0; i < points.size() - 1; i++) { // до передостанньої точки 
 		drawLine(points[i], points[i + 1], color, algType);
 	}
 
@@ -204,19 +204,19 @@ void ViewerWidget::clearObject()
 	clear();
 }
 
-QVector<QPoint> ViewerWidget::rotation(const QVector<QPoint>& points, double a)
+QVector<QPoint> ViewerWidget::rotation(const QVector<QPoint>& points, double a, QPoint origin)
 {
 	if (points.isEmpty()) return points;
 
 	QVector<QPoint> newPoints;
-	QPoint center = points[0];
+	//QPoint origin = points[0];
 
 	double rad = a * M_PI / 180.0;
 	double cosA = cos(rad);
 	double sinA = sin(rad);
 
-	double x0 = center.x();
-	double y0 = center.y();
+	double x0 = origin.x();
+	double y0 = origin.y();
 
 	for (int i = 0; i < points.size(); i++) {
 		double x = points[i].x();
@@ -267,6 +267,34 @@ QVector<QPoint> ViewerWidget::share(const QVector<QPoint>& points, double d)
 	}
 	return newPoints;
 }
+QVector<QPoint> ViewerWidget::symmetry(QPoint A, QPoint B, const QVector<QPoint>& points)
+{
+	if (points.isEmpty()) return points;
+	QVector<QPoint> newPoints;
+
+	double u = B.x() - A.x();
+	double v = B.y() - A.y();
+	double a = v;
+	double b = -u;
+	double c = (-a * A.x()) - (b * A.y());
+
+	double denominator = (a * a) + (b * b);
+	if (denominator == 0) return points; //dividing by 0 
+
+	for (int i = 0; i < points.size(); i++) {
+		double px = points[i].x();
+		double py = points[i].y();
+
+		double factor = (a * px + b * py + c) / denominator;
+
+		double newX = px - 2 * a * factor;
+		double newY = py - 2 * b * factor;
+
+		newPoints.append(QPoint(qRound(newX), qRound(newY)));
+	}
+
+	return newPoints;
+}
 QVector<QPoint> ViewerWidget::displacement(QPoint origin, QPoint newP, const QVector<QPoint>& points)
 {
 	if (points.isEmpty()) return points;
@@ -286,6 +314,106 @@ QVector<QPoint> ViewerWidget::displacement(QPoint origin, QPoint newP, const QVe
 	update();
 
 	return newPoints;
+}
+
+QVector<QPoint> ViewerWidget::clipLine(QPoint P1, QPoint P2)
+{ //Cyrus-Beck algorithm
+	QVector<QPoint> newPoints;
+
+	double tLow = 0, tUpp = 1;
+	QPoint d = P2 - P1; //Direction vector for P1P2 
+	QPoint borderPoints[4] = {QPoint(0,0), QPoint(0, getImgHeight()-1), QPoint(getImgWidth()-1, getImgHeight()-1), QPoint(getImgWidth()-1,0)};
+
+	for (int i = 0; i < 4; i++) {
+		double uE, vE;
+		if (i == 3) {
+			uE = borderPoints[0].x() - borderPoints[i].x();
+			vE = borderPoints[0].y() - borderPoints[i].y();
+		}
+		else {
+			uE = borderPoints[i + 1].x() - borderPoints[i].x();
+			vE = borderPoints[i + 1].y() - borderPoints[i].y();
+		}
+
+		QPoint w = P1 - borderPoints[i]; //Direction vector from edge to begining of P1P2
+		QPoint n(vE, -uE);
+		double dn = d.x() * n.x() + d.y() * n.y();
+		double wn = w.x() * n.x() + w.y() * n.y();
+
+		if (dn != 0) {
+			double t = -wn / dn;
+			if (dn > 0) { //The line is directed inward (всередину)
+				tLow = std::max(t, tLow);
+			}
+			else {
+				tUpp = std::min(t, tUpp);
+			}
+		}
+		else {//If line is paralel and outside
+			if (wn < 0) return QVector<QPoint>();
+		}
+		
+	}
+
+	if (tLow <= tUpp) {
+		QPoint P1new(qRound(P1.x() + tLow * d.x()), qRound(P1.y() + tLow * d.y()));
+		QPoint P2new(qRound(P1.x() + tUpp * d.x()), qRound(P1.y() + tUpp * d.y()));
+
+		newPoints.append(P1new);
+		newPoints.append(P2new);
+	}
+
+	return newPoints;
+}
+QVector<QPoint> ViewerWidget::clipPolygon(const QVector<QPoint>& points)
+{ // Sutherland-Hodgman algorithm
+
+	if (points.isEmpty()) return points;
+	QVector<QPoint> results = points;
+
+	double xmins[4] = { 0, 0, -(double)(getImgWidth()-1), -(double)(getImgHeight() - 1) };
+
+	for (int i = 0; i < 4; i++) {
+		results = clipWithEdge(results, xmins[i]);
+		results = rotation(results, -90);
+	}
+
+	return results;
+}
+QVector<QPoint> ViewerWidget::clipWithEdge(const QVector<QPoint>& points, double xmin)
+{
+	QVector<QPoint> W;
+	if (points.isEmpty()) return W; // Захист від порожнього масиву
+
+	QPoint S = points.last();
+
+	for (int i = 0; i < points.size(); i++) {
+		QPoint V = points[i];
+		QPoint P;
+		double Py;
+
+		if (V.x() >= xmin) {
+			if (S.x() >= xmin) {
+				W.append(V);
+			}
+			else {
+				Py = S.y() + (xmin - S.x()) / (double)(V.x() - S.x()) * (V.y() - S.y());
+				P.setX(qRound(xmin));
+				P.setY(qRound(Py));
+				W.append(P);
+				W.append(V);
+			}
+		}
+		else if (S.x() >= xmin) {
+			Py = S.y() + (xmin - S.x()) / (V.x() - S.x()) * (V.y() - S.y());
+			P.setX(qRound(xmin));
+			P.setY(qRound(Py));
+			W.append(P);
+		}
+		S = V;
+	}
+
+	return W;
 }
 
 void ViewerWidget::clear()

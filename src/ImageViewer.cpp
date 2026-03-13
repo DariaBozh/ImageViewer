@@ -208,10 +208,26 @@ bool ImageViewer::saveImage(QString filename)
 }
 
 void ImageViewer::updateCanvas(ViewerWidget* w)
-{ // Draws new polygon(or line) when we moving it or 
+{ // Draws new polygon(or line) when we moving it or transforming
 	w->clear();
-	w->drawPolygon(w->getTransformedPoints(), globalColor, ui->comboBoxLineAlg->currentIndex());
-	w->update();
+
+	if (w->getTransformedPoints().size() == 2) {
+		QPoint p1 = w->getTransformedPoints()[0];
+		QPoint p2 = w->getTransformedPoints()[1];
+
+		QVector<QPoint> clipped = w->clipLine(p1, p2);
+
+		if (!clipped.isEmpty()) {
+			w->drawLine(clipped[0], clipped[1], globalColor, ui->comboBoxLineAlg->currentIndex());
+		}
+	}
+	else if (w->getTransformedPoints().size() > 2) {
+		QVector<QPoint> clippedPolygon = w->clipPolygon(w->getTransformedPoints());
+		if (!clippedPolygon.isEmpty()) {
+			w->drawPolygon(clippedPolygon, globalColor, ui->comboBoxLineAlg->currentIndex());
+		}
+		w->update();
+	}
 }
 
 //Slots
@@ -281,8 +297,9 @@ void ImageViewer::on_pushButtonRotate_clicked()
 {
 	if (vW->getTransformedPoints().isEmpty()) return;
 	double angle = ui->SpinBoxDegreesRotate->value();
-	
-	QVector<QPoint> polygonRotated = vW->rotation(vW->getTransformedPoints(), angle);
+	QPoint origin = vW->getTransformedPoints()[0];
+
+	QVector<QPoint> polygonRotated = vW->rotation(vW->getTransformedPoints(), angle, origin);
 	vW->setTransformedPoints(polygonRotated);
 	
 	updateCanvas(vW);
@@ -311,7 +328,18 @@ void ImageViewer::on_pushButtonSlope_clicked()
 	vW->setTransformedPoints(polygonSloped);
 	
 	updateCanvas(vW);
+}
+void ImageViewer::on_pushButtonSymmetry_clicked()
+{
+	if (vW->getTransformedPoints().isEmpty()) return;
 
+	QPoint A = vW->getTransformedPoints()[0];
+	QPoint B = vW->getTransformedPoints()[1];
+
+	QVector<QPoint> polygonSymmetric = vW->symmetry(A, B, vW->getTransformedPoints());
+	vW->setTransformedPoints(polygonSymmetric);
+
+	updateCanvas(vW);
 }
 
 void ImageViewer::on_pushButtonSetColor_clicked()
