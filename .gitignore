@@ -9,6 +9,7 @@ CMakeCache.txt
 cmake_install.cmake
 
 # Специфічні файли ОС та редакторів
+.vs/
 .DS_Store
 .vscode/
 .idea/
