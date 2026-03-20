@@ -36,6 +36,8 @@ private:
 	QVector<QPoint> transformedPoints;
 
 	ObjectType currentObjectType = ObjectType::None; 
+	bool isFilled = false;
+	QColor fillColor;
 
 public:
 

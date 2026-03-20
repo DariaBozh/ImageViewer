@@ -174,9 +174,7 @@ void ImageViewer::ViewerWidgetWheel(ViewerWidget* w, QEvent* event)
 	QVector<QPoint> scaled = w->scale(w->getTransformedPoints(), scaleFactor, scaleFactor);
 	w->setTransformedPoints(scaled);
 	
-	w->clear();
-	w->drawPolygon(scaled, globalColor, ui->comboBoxLineAlg->currentIndex());
-	w->update();
+	updateCanvas(w);
 }
 
 //ImageViewer Events

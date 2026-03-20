@@ -205,7 +205,6 @@ void ViewerWidget::scanLine(const QVector<QPoint>& points, QColor color)
 	if (ET.isEmpty()) return;
 
 	QList<Edge> AET; 
-	qDebug() << "Filling from yMin:" << yMin << "to yMax:" << yMax << "Edges count:" << ET.size();
 
 	for (int y = yMin; y <= yMax; ++y) {
 		// Move edges that START at this scan line into AET
@@ -250,6 +249,10 @@ void ViewerWidget::scanLine(const QVector<QPoint>& points, QColor color)
 		}
 	}
 	update();
+
+	// Save fill state so drawObject can re-apply it after transformations
+	isFilled = true;
+	fillColor = color;
 }
 QVector<Edge> ViewerWidget::createEdgeTable(const QVector<QPoint>& points, int& yMin, int& yMax)
 {
@@ -311,6 +314,9 @@ void ViewerWidget::drawObject(QColor color, int algType)
 	case ObjectType::Polygon: {
 		QVector<QPoint> clipped = clipPolygon(transformedPoints);
 		if (!clipped.isEmpty()) {
+			if (isFilled) {
+				scanLine(clipped, fillColor);
+			}
 			drawPolygon(clipped, color, algType);
 		}
 		break;
@@ -324,6 +330,7 @@ void ViewerWidget::clearObject()
 	polygonPoints.clear();
 	transformedPoints.clear();
 	drawPolygonActivated = false;
+	isFilled = false;
 	clear();
 } 
 // !!!Should be rewritten, now its only works with polygon!!!
