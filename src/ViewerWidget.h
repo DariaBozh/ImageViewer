@@ -1,9 +1,24 @@
 #pragma once
 #include <QtWidgets>
 #include <math.h>
+#include <algorithm>
 
 enum class ObjectType {
-	None, Line, Polygon, Circle //Curve
+	None, Line, Polygon, Circle //...Curve
+};
+
+/*
+struct TVertex {
+	QPoint point;
+	QColor color;
+};
+*/
+
+struct Edge { 
+	int yMin;
+	int yMax;
+	double x; // Intersection with the current line
+	double w; // w = 1/m
 };
 
 class ViewerWidget :public QWidget {
@@ -58,10 +73,15 @@ public:
 	void setDrawPolygonActivated(bool state) { drawPolygonActivated = state; }
 	bool getDrawPolygonActivated() { return drawPolygonActivated; }
 	void closePolygon(QColor color, int algType = 0);
-	void clearObject();
 
+	//Filling functions
+	void scanLine(const QVector<QPoint>& points, QColor color);
+	QVector<Edge> createEdgeTable(const QVector<QPoint>& points, int& yMin, int& yMax);
+
+	//For object type
 	void setObjectType(ObjectType type) { currentObjectType = type; }
 	void drawObject(QColor color, int algType);
+	void clearObject();
 
 	//Transformation functions
 	QVector<QPoint> rotation(const QVector<QPoint>& points, double a, QPoint origin = QPoint(0,0));

@@ -196,12 +196,102 @@ void ViewerWidget::closePolygon(QColor color, int algType)
 	QPoint startpoint = polygonPoints.first();
 	drawLine(endpoint, startpoint, color, algType);
 }
-void ViewerWidget::clearObject()
+
+//Filling functions
+void ViewerWidget::scanLine(const QVector<QPoint>& points, QColor color)
 {
-	polygonPoints.clear();
-	transformedPoints.clear();
-	drawPolygonActivated = false;
-	clear();
+	int yMin, yMax;
+	QVector<Edge> ET = createEdgeTable(points, yMin, yMax);
+	if (ET.isEmpty()) return;
+
+	QList<Edge> AET; 
+	qDebug() << "Filling from yMin:" << yMin << "to yMax:" << yMax << "Edges count:" << ET.size();
+
+	for (int y = yMin; y <= yMax; ++y) {
+		// Move edges that START at this scan line into AET
+		for (int i = 0; i < ET.size(); ) {
+			if (ET[i].yMin == y) {
+				AET.append(ET[i]);
+				ET.removeAt(i); // We don't increment i because the list has shifted
+			}
+			else {
+				i++;
+			}
+		}
+
+		// Sorting by x
+		std::sort(AET.begin(), AET.end(), [](const Edge& a, const Edge& b) {
+			return a.x < b.x;
+		});
+
+		// Fill between pairs
+		for (int j = 0; j + 1 < AET.size(); j += 2) {
+			int xStart = static_cast<int>(std::ceil(AET[j].x));
+			int xEnd = static_cast<int>(std::floor(AET[j + 1].x));
+
+			if (xStart <= xEnd) {
+				for (int x = xStart; x <= xEnd; x++) {
+					setPixel(x, y, color);
+				}
+			}
+		}
+
+		// Remove finished edges (Δy == 0 after decrement), update x
+		for (int k = 0; k < AET.size(); ) {
+			Edge& edge = AET[k];
+			edge.x += edge.w;
+			// yMax was already shortened by 1, so remove when y reaches yMax
+			if (y >= edge.yMax) {
+				AET.removeAt(k);
+			}
+			else {
+				k++;
+			}
+		}
+	}
+	update();
+}
+QVector<Edge> ViewerWidget::createEdgeTable(const QVector<QPoint>& points, int& yMin, int& yMax)
+{
+	QVector<Edge> edgeTable;
+	int n = points.size();
+
+	yMin = points[0].y();
+    yMax = points[0].y();
+
+	for (int i = 0; i < n; i++) {
+		QPoint p1 = points[i];
+		if (p1.y() < yMin) yMin = p1.y();
+		if (p1.y() > yMax) yMax = p1.y();
+		QPoint p2 = points[(i + 1) % n];
+
+		if (p1.y() == p2.y()) continue;
+
+		Edge e;
+		if (p1.y() < p2.y()) {
+			e.yMin = p1.y();
+			e.yMax = p2.y();
+			e.yMax -= 1;
+			e.x = p1.x(); 
+		}
+		else {
+			e.yMin = p2.y();
+			e.yMax = p1.y();
+			e.yMax -= 1;
+			e.x = p2.x();
+		}
+
+		e.w = static_cast<double>(p2.x() - p1.x()) / (p2.y() - p1.y());
+
+		edgeTable.append(e);
+	}
+
+	std::sort(edgeTable.begin(), edgeTable.end(), [](const Edge& a, const Edge& b) {
+		if (a.yMin == b.yMin) return a.x < b.x; 
+		return a.yMin < b.yMin; // sorting by yMin
+	});
+	
+	return edgeTable;
 }
 
 void ViewerWidget::drawObject(QColor color, int algType)
@@ -229,6 +319,14 @@ void ViewerWidget::drawObject(QColor color, int algType)
 	}
 
 }
+void ViewerWidget::clearObject()
+{
+	polygonPoints.clear();
+	transformedPoints.clear();
+	drawPolygonActivated = false;
+	clear();
+} 
+// !!!Should be rewritten, now its only works with polygon!!!
 
 QVector<QPoint> ViewerWidget::rotation(const QVector<QPoint>& points, double a, QPoint origin)
 {

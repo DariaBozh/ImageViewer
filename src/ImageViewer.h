@@ -54,6 +54,7 @@ private slots:
 	void on_actionExit_triggered();
 
 	void on_pushButtonClearObject_clicked();
+	void on_pushButtonFill_clicked();
 	void on_pushButtonRotate_clicked();
 	void on_pushButtonScale_clicked();
 	void on_pushButtonSlope_clicked();

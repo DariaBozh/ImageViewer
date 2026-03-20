@@ -1,4 +1,4 @@
-#include "ImageViewer.h"
+п»ї#include "ImageViewer.h"
 
 ImageViewer::ImageViewer(QWidget* parent)
 	: QMainWindow(parent), ui(new Ui::ImageViewerClass)
@@ -122,7 +122,7 @@ void ImageViewer::ViewerWidgetMouseButtonPress(ViewerWidget* w, QEvent* event)
 		}
 
 		else if (e->button() == Qt::RightButton) {
-			w->setTransformedPoints(w->getPolygonPoints()); // Ініціалізуємо робочий вектор
+			w->setTransformedPoints(w->getPolygonPoints()); // Р†РЅС–С†С–Р°Р»С–Р·СѓС”РјРѕ СЂРѕР±РѕС‡РёР№ РІРµРєС‚РѕСЂ
 			w->closePolygon(globalColor, ui->comboBoxLineAlg->currentIndex());
 			w->setDrawPolygonActivated(false);
 			w->setObjectType(ObjectType::Polygon);
@@ -280,6 +280,12 @@ void ImageViewer::on_pushButtonClearObject_clicked()
 	vW->clearObject();
 	vW->setObjectType(ObjectType::None);
 	vW->update();
+}
+void ImageViewer::on_pushButtonFill_clicked()
+{
+	if (vW->getTransformedPoints().isEmpty()) return;
+	vW->scanLine(vW->getTransformedPoints(), globalColor);
+	vW->update();   // в†ђ just refresh the widget, don't clear and redraw
 }
 void ImageViewer::on_pushButtonRotate_clicked()
 {

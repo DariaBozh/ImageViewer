@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>666</width>
-    <height>579</height>
+    <width>708</width>
+    <height>690</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -25,8 +25,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>389</width>
-         <height>499</height>
+         <width>388</width>
+         <height>610</height>
         </rect>
        </property>
       </widget>
@@ -39,7 +39,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>666</width>
+     <width>708</width>
      <height>21</height>
     </rect>
    </property>
@@ -114,7 +114,7 @@
           </attribute>
          </widget>
         </item>
-        <item row="0" column="0" colspan="7">
+        <item row="0" column="0" colspan="8">
          <widget class="QComboBox" name="comboBoxLineAlg">
           <item>
            <property name="text">
@@ -126,26 +126,6 @@
             <string>Bresenham</string>
            </property>
           </item>
-         </widget>
-        </item>
-        <item row="3" column="0">
-         <widget class="QToolButton" name="toolButtonDrawCircle">
-          <property name="text">
-           <string>Circle</string>
-          </property>
-          <property name="checkable">
-           <bool>true</bool>
-          </property>
-          <attribute name="buttonGroup">
-           <string notr="true">buttonGroup</string>
-          </attribute>
-         </widget>
-        </item>
-        <item row="3" column="6">
-         <widget class="QPushButton" name="pushButtonClearObject">
-          <property name="text">
-           <string>Clear object</string>
-          </property>
          </widget>
         </item>
         <item row="2" column="0">
@@ -161,6 +141,33 @@
           </attribute>
          </widget>
         </item>
+        <item row="3" column="0">
+         <widget class="QToolButton" name="toolButtonDrawCircle">
+          <property name="text">
+           <string>Circle</string>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <attribute name="buttonGroup">
+           <string notr="true">buttonGroup</string>
+          </attribute>
+         </widget>
+        </item>
+        <item row="1" column="7">
+         <widget class="QPushButton" name="pushButtonClearObject">
+          <property name="text">
+           <string>Clear object</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="7">
+         <widget class="QPushButton" name="pushButtonFill">
+          <property name="text">
+           <string>Fill</string>
+          </property>
+         </widget>
+        </item>
        </layout>
       </widget>
      </item>
@@ -170,10 +177,20 @@
         <string>Transformations</string>
        </property>
        <layout class="QGridLayout" name="gridLayout_2">
-        <item row="1" column="1">
-         <widget class="QDoubleSpinBox" name="dsb_xScale">
+        <item row="0" column="0">
+         <widget class="QPushButton" name="pushButtonRotate">
+          <property name="text">
+           <string>Rotate</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QSpinBox" name="SpinBoxDegreesRotate">
           <property name="minimum">
-           <double>0.010000000000000</double>
+           <number>-360</number>
+          </property>
+          <property name="maximum">
+           <number>360</number>
           </property>
          </widget>
         </item>
@@ -191,13 +208,6 @@
           </property>
          </widget>
         </item>
-        <item row="0" column="0">
-         <widget class="QPushButton" name="pushButtonRotate">
-          <property name="text">
-           <string>Rotate</string>
-          </property>
-         </widget>
-        </item>
         <item row="2" column="0">
          <widget class="QPushButton" name="pushButtonSlope">
           <property name="text">
@@ -205,13 +215,17 @@
           </property>
          </widget>
         </item>
-        <item row="0" column="1">
-         <widget class="QSpinBox" name="SpinBoxDegreesRotate">
+        <item row="1" column="1">
+         <widget class="QDoubleSpinBox" name="dsb_xScale">
           <property name="minimum">
-           <number>-360</number>
+           <double>0.010000000000000</double>
           </property>
-          <property name="maximum">
-           <number>360</number>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <widget class="QDoubleSpinBox" name="dsb_Slope">
+          <property name="minimum">
+           <double>-50.000000000000000</double>
           </property>
          </widget>
         </item>
@@ -222,10 +236,54 @@
           </property>
          </widget>
         </item>
-        <item row="2" column="1">
-         <widget class="QDoubleSpinBox" name="dsb_Slope">
-          <property name="minimum">
-           <double>-50.000000000000000</double>
+       </layout>
+      </widget>
+     </item>
+     <item>
+      <widget class="QGroupBox" name="groupBox_4">
+       <property name="title">
+        <string>Triangle Settings</string>
+       </property>
+       <layout class="QGridLayout" name="gridLayout_3">
+        <item row="1" column="1">
+         <widget class="QPushButton" name="pbColorVertex2">
+          <property name="text">
+           <string>Vertex 2</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QPushButton" name="pbColorVertex1">
+          <property name="text">
+           <string>Vertex 1</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="2">
+         <widget class="QPushButton" name="pbColorVertex3">
+          <property name="text">
+           <string>Vertex 3</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="0">
+         <widget class="QComboBox" name="comboBox">
+          <item>
+           <property name="text">
+            <string>Nearest Neighbor</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Barycentric</string>
+           </property>
+          </item>
+         </widget>
+        </item>
+        <item row="0" column="1" colspan="2">
+         <widget class="QLabel" name="label">
+          <property name="text">
+           <string>Choose your algorithm here</string>
           </property>
          </widget>
         </item>
