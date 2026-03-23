@@ -4,7 +4,7 @@
 #include <algorithm>
 
 enum class ObjectType {
-	None, Line, Polygon, Circle //...Curve
+	None, Line, Polygon, Triangle, Circle //...Curve
 };
 
 struct TVertex {

@@ -240,7 +240,7 @@
       </widget>
      </item>
      <item>
-      <widget class="QGroupBox" name="groupBox_4">
+      <widget class="QGroupBox" name="gbTriangle">
        <property name="title">
         <string>Triangle Settings</string>
        </property>

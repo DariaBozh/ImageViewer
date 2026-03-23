@@ -18,6 +18,8 @@ ImageViewer::ImageViewer(QWidget* parent)
 	globalColor = Qt::blue;
 	QString style_sheet = QString("background-color: %1;").arg(globalColor.name(QColor::HexRgb));
 	ui->pushButtonSetColor->setStyleSheet(style_sheet);
+
+	ui->gbTriangle->setEnabled(false);
 }
 
 // Event filters
@@ -99,7 +101,7 @@ void ImageViewer::ViewerWidgetMouseButtonPress(ViewerWidget* w, QEvent* event)
 		}
 	}
 
-	//Polygon
+	//Polygon (or triangle specifically)
 	if (polygonSelected) {
 
 		if (e->button() == Qt::LeftButton) {
@@ -127,6 +129,12 @@ void ImageViewer::ViewerWidgetMouseButtonPress(ViewerWidget* w, QEvent* event)
 			w->setDrawPolygonActivated(false);
 			w->setObjectType(ObjectType::Polygon);
 			w->update();
+
+			const QVector<QPoint>& n = w->getTransformedPoints();
+			if (n.size() == 3) {
+				ui->gbTriangle->setEnabled(true);
+				w->setObjectType(ObjectType::Triangle);
+			}
 		}
 	}
 
@@ -278,6 +286,7 @@ void ImageViewer::on_pushButtonClearObject_clicked()
 	vW->clearObject();
 	vW->setObjectType(ObjectType::None);
 	vW->update();
+	ui->gbTriangle->setEnabled(false);
 }
 void ImageViewer::on_pushButtonFill_clicked()
 {
@@ -297,7 +306,7 @@ void ImageViewer::on_pushButtonFill_clicked()
 		vW->scanLine(points, globalColor);
 	}
 	
-	//updateCanvas(vW);
+	updateCanvas(vW);
 }
 
 void ImageViewer::on_pushButtonRotate_clicked()

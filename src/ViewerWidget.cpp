@@ -393,11 +393,21 @@ void ViewerWidget::drawObject(QColor color, int algType)
 		}
 		break;
 	}
-	default: break;
-	}
+	case ObjectType::Triangle: {
+		QVector<QPoint> clipped = clipPolygon(transformedPoints);
+		if (!clipped.isEmpty()) {
+			drawPolygon(clipped, color, algType);
+		}
 
-	if (isTriangleFilled) {
-		fillTriangle(v1, v2, v3, currentInterType);
+		if (isTriangleFilled && transformedPoints.size() >= 3) {
+			TVertex currentV1 = { transformedPoints[0], v1.color };
+			TVertex currentV2 = { transformedPoints[1], v2.color };
+			TVertex currentV3 = { transformedPoints[2], v3.color };
+			fillTriangle(currentV1, currentV2, currentV3, currentInterType);
+		}
+		break;
+	}
+	default: break;
 	}
 
 }
@@ -407,9 +417,10 @@ void ViewerWidget::clearObject()
 	transformedPoints.clear();
 	drawPolygonActivated = false;
 	isFilled = false;
+	isTriangleFilled = false;
+	currentObjectType = ObjectType::None;
 	clear();
 } 
-// !!!Should be rewritten, now its only works with polygon!!!
 
 QVector<QPoint> ViewerWidget::rotation(const QVector<QPoint>& points, double a, QPoint origin)
 {
