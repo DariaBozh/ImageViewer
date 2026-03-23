@@ -23,6 +23,11 @@ private:
 	QSettings settings;
 	QMessageBox msgBox;
 
+	//Triangle
+	QColor colorV1 = Qt::red;
+	QColor colorV2 = Qt::blue;
+	QColor colorV3 = Qt::green;
+
 	QPoint lastMousePos;
 	bool isDragging = false;
 
@@ -59,6 +64,10 @@ private slots:
 	void on_pushButtonScale_clicked();
 	void on_pushButtonSlope_clicked();
 	void on_pushButtonSymmetry_clicked();
+
+	void on_pbColorVertex1_clicked();
+	void on_pbColorVertex2_clicked();
+	void on_pbColorVertex3_clicked();
 
 	//Added for reseting active state (selecting another drawing option)
 	void on_toolButtonDrawLine_clicked();

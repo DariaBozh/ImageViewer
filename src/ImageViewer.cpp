@@ -281,10 +281,25 @@ void ImageViewer::on_pushButtonClearObject_clicked()
 }
 void ImageViewer::on_pushButtonFill_clicked()
 {
-	if (vW->getTransformedPoints().isEmpty()) return;
-	vW->scanLine(vW->getTransformedPoints(), globalColor);
-	vW->update();   // ← just refresh the widget, don't clear and redraw
+	QVector<QPoint> points = vW->getTransformedPoints().isEmpty() ? vW->getPolygonPoints() : vW->getTransformedPoints();
+	if (points.size() < 3) return;
+
+	if (points.size() == 3) {
+		TVertex v1 = { points[0], colorV1 };
+		TVertex v2 = { points[1], colorV2 };
+		TVertex v3 = { points[2], colorV3 };
+
+		int interType = ui->comboBoxInterpol->currentIndex();
+
+		vW->fillTriangle(v1, v2, v3, interType);
+	}
+	else {
+		vW->scanLine(points, globalColor);
+	}
+	
+	//updateCanvas(vW);
 }
+
 void ImageViewer::on_pushButtonRotate_clicked()
 {
 	if (vW->getTransformedPoints().isEmpty()) return;
@@ -332,6 +347,31 @@ void ImageViewer::on_pushButtonSymmetry_clicked()
 	vW->setTransformedPoints(polygonSymmetric);
 
 	updateCanvas(vW);
+}
+
+void ImageViewer::on_pbColorVertex1_clicked()
+{
+	QColor c = QColorDialog::getColor(colorV1, this, "Select Color for Vertex 1");
+	if (c.isValid()) {
+		colorV1 = c;
+		ui->pbColorVertex1->setStyleSheet(QString("background-color: %1;").arg(c.name()));
+	}
+}
+void ImageViewer::on_pbColorVertex2_clicked()
+{
+	QColor c = QColorDialog::getColor(colorV2, this, "Select Color for Vertex 2");
+	if (c.isValid()) {
+		colorV2 = c;
+		ui->pbColorVertex2->setStyleSheet(QString("background-color: %1;").arg(c.name()));
+	}
+}
+void ImageViewer::on_pbColorVertex3_clicked()
+{
+	QColor c = QColorDialog::getColor(colorV3, this, "Select Color for Vertex 3");
+	if (c.isValid()) {
+		colorV3 = c;
+		ui->pbColorVertex3->setStyleSheet(QString("background-color: %1;").arg(c.name()));
+	}
 }
 
 void ImageViewer::on_pushButtonSetColor_clicked()

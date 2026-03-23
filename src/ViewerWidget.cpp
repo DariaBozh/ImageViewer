@@ -297,6 +297,78 @@ QVector<Edge> ViewerWidget::createEdgeTable(const QVector<QPoint>& points, int& 
 	return edgeTable;
 }
 
+void ViewerWidget::fillTriangle(TVertex T0, TVertex T1, TVertex T2, int interType)
+{
+	v1 = T0;
+	v2 = T1;
+	v3 = T2;
+	currentInterType = interType;
+	isTriangleFilled = true;
+
+	//Sorting
+	auto compare = [](const TVertex& a, const TVertex& b) {
+		if (a.point.y() != b.point.y()) return a.point.y() > b.point.y();
+		return a.point.x() > b.point.x();
+	};
+
+	if (compare(T0, T1)) std::swap(T0, T1);
+	if (compare(T1, T2)) std::swap(T1, T2);
+	if (compare(T0, T1)) std::swap(T0, T1);
+
+	TVertex t0 = T0, t1 = T1, t2 = T2;
+
+	if (T1.point.y() == T2.point.y()) { // Flat-bottom 
+		fillBaseTriangle(T0, T1, T2, t0, t1, t2, interType);
+	}
+	else if (T0.point.y() == T1.point.y()) { // Flat-top
+		fillBaseTriangle(T2, T0, T1, t0, t1, t2, interType);
+	}
+	else {// Split
+		TVertex P;
+		double t = static_cast<double>(T1.point.y() - T0.point.y()) / (T2.point.y() - T0.point.y());
+		P.point = QPoint(qRound(T0.point.x() + t * (T2.point.x() - T0.point.x())), T1.point.y());
+
+		fillBaseTriangle(T0, T1, P, t0, t1, t2, interType); 
+		fillBaseTriangle(T2, T1, P, t0, t1, t2, interType); 
+	}
+	update();
+}
+void ViewerWidget::fillBaseTriangle(TVertex T0, TVertex T1, TVertex T2, TVertex orig0, TVertex orig1, TVertex orig2, int interType)
+{
+	if (T0.point.y() == T1.point.y()) return;
+
+	double w1 = static_cast<double>(T1.point.x() - T0.point.x()) / (T1.point.y() - T0.point.y());
+	double w2 = static_cast<double>(T2.point.x() - T0.point.x()) / (T2.point.y() - T0.point.y());
+
+	double x1 = T0.point.x();
+	double x2 = T0.point.x();
+
+	//Direction
+	int stepY = (T0.point.y() < T1.point.y()) ? 1 : -1;
+	int yStart = T0.point.y();
+	int yEnd = T1.point.y();
+
+	for (int y = yStart; (stepY > 0 ? y <= yEnd : y >= yEnd); y += stepY) {
+		//drawing line between x1 and x2
+		int startX = std::ceil(std::min(x1, x2));
+		int endX = std::floor(std::max(x1, x2));
+		
+		for (int x = startX; x <= endX; x++) {
+			QColor pixelColor;
+			if (interType == 0) {
+				pixelColor = getNearestNeighborColor(x, y, orig0, orig1, orig2);
+			}
+			else {
+				pixelColor = getBarycentricColor(x, y, orig0, orig1, orig2);
+			}
+			setPixel(x, y, pixelColor);
+		}
+
+		x1 += w1 * stepY;
+		x2 += w2 * stepY;
+	}
+}
+
 void ViewerWidget::drawObject(QColor color, int algType)
 {
 	if (transformedPoints.isEmpty()) return;
@@ -322,6 +394,10 @@ void ViewerWidget::drawObject(QColor color, int algType)
 		break;
 	}
 	default: break;
+	}
+
+	if (isTriangleFilled) {
+		fillTriangle(v1, v2, v3, currentInterType);
 	}
 
 }
@@ -637,6 +713,49 @@ void ViewerWidget::drawLineBresenham(QPoint start, QPoint end, QColor color)
 		}
 	}
 
+}
+
+QColor ViewerWidget::getNearestNeighborColor(int x, int y, TVertex T0, TVertex T1, TVertex T2)
+{
+	QColor color;
+
+	long d0 = (x - T0.point.x()) *(x - T0.point.x()) + (y - T0.point.y()) * (y - T0.point.y());
+	long d1 = (x - T1.point.x()) * (x - T1.point.x()) + (y - T1.point.y()) * (y - T1.point.y());
+	long d2 = (x - T2.point.x()) * (x - T2.point.x()) + (y - T2.point.y()) * (y - T2.point.y());
+
+	if (d0 < d1 && d0 < d2) {
+		color = T0.color;
+	}else if (d1 < d0 && d1 < d2) {
+		color = T1.color;
+	}else {
+		color = T2.color;
+	}
+
+	return color;
+}
+QColor ViewerWidget::getBarycentricColor(int x, int y, TVertex T0, TVertex T1, TVertex T2)
+{
+	double ux = T1.point.x() - T0.point.x();
+	double uy = T1.point.y() - T0.point.y();
+	double vx = T2.point.x() - T0.point.x();
+	double vy = T2.point.y() - T0.point.y();
+
+	double nz = ux * vy - uy * vx;
+
+	double A = abs(nz) / 2.0;
+	if (A < 0.0001) return T0.color; //if they are on 1 line
+	double A0 = abs((T1.point.x() - x)*(T2.point.y() - y) - (T1.point.y() - y)*(T2.point.x() - x)) / 2.0; //P-T1-T2
+	double A1 = abs((T0.point.x() - x) * (T2.point.y() - y) - (T0.point.y() - y) * (T2.point.x() - x)) / 2.0; //P-T0-T2
+
+	double l0 = A0 / A;
+	double l1 = A1 / A;
+	double l2 = 1.0 - l0 - l1;
+
+	int r = qBound(0, (int)(l0 * T0.color.red() + l1 * T1.color.red() + l2 * T2.color.red()), 255);
+	int g = qBound(0, (int)(l0 * T0.color.green() + l1 * T1.color.green() + l2 * T2.color.green()), 255);
+	int b = qBound(0, (int)(l0 * T0.color.blue() + l1 * T1.color.blue() + l2 * T2.color.blue()), 255);
+
+	return QColor(r, g, b);
 }
 
 //Slots

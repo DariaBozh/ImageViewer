@@ -7,12 +7,10 @@ enum class ObjectType {
 	None, Line, Polygon, Circle //...Curve
 };
 
-/*
 struct TVertex {
-	QPoint point;
+	QPointF point;
 	QColor color;
 };
-*/
 
 struct Edge { 
 	int yMin;
@@ -36,8 +34,13 @@ private:
 	QVector<QPoint> transformedPoints;
 
 	ObjectType currentObjectType = ObjectType::None; 
+
 	bool isFilled = false;
 	QColor fillColor;
+
+	TVertex v1, v2, v3; 
+	bool isTriangleFilled = false;
+	int currentInterType = 0;
 
 public:
 
@@ -80,6 +83,9 @@ public:
 	void scanLine(const QVector<QPoint>& points, QColor color);
 	QVector<Edge> createEdgeTable(const QVector<QPoint>& points, int& yMin, int& yMax);
 
+	void fillTriangle(TVertex T0, TVertex T1, TVertex T2, int interType = 0);
+	void fillBaseTriangle(TVertex T0, TVertex T1, TVertex T2, TVertex orig0, TVertex orig1, TVertex orig2, int interType);
+
 	//For object type
 	void setObjectType(ObjectType type) { currentObjectType = type; }
 	void drawObject(QColor color, int algType);
@@ -107,6 +113,8 @@ public:
 	//Algorithms
 	void drawLineDDA(QPoint start, QPoint end, QColor color);
 	void drawLineBresenham(QPoint start, QPoint end, QColor color);
+	QColor getNearestNeighborColor(int x, int y, TVertex T0, TVertex T1, TVertex T2);
+	QColor getBarycentricColor(int x, int y, TVertex T0, TVertex T1, TVertex T2);
 
 public slots:
 	void paintEvent(QPaintEvent* event) Q_DECL_OVERRIDE;
