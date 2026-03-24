@@ -328,27 +328,30 @@ void ViewerWidget::fillTriangle(TVertex T0, TVertex T1, TVertex T2, int interTyp
 		double t = static_cast<double>(T1.point.y() - T0.point.y()) / (T2.point.y() - T0.point.y());
 		P.point = QPoint(qRound(T0.point.x() + t * (T2.point.x() - T0.point.x())), T1.point.y());
 
-		fillBaseTriangle(T0, T1, P, t0, t1, t2, interType); 
-		fillBaseTriangle(T2, T1, P, t0, t1, t2, interType); 
+		fillBaseTriangle(T0, T1, P, t0, t1, t2, interType, true);  // exclude split scanline
+		fillBaseTriangle(T2, T1, P, t0, t1, t2, interType, false); // owns the split scanline 
 	}
 	update();
 }
-void ViewerWidget::fillBaseTriangle(TVertex T0, TVertex T1, TVertex T2, TVertex orig0, TVertex orig1, TVertex orig2, int interType)
+void ViewerWidget::fillBaseTriangle(TVertex t0, TVertex t1, TVertex t2, TVertex orig0, TVertex orig1, TVertex orig2, int interType, bool excludeEnd)
 {
-	if (T0.point.y() == T1.point.y()) return;
+	//t0, t1, t2 - vertices of the current subtriangle
+	//orig0, orig1, orig2 - used for calculating pixel color
+	if (t0.point.y() == t1.point.y()) return;
 
-	double w1 = static_cast<double>(T1.point.x() - T0.point.x()) / (T1.point.y() - T0.point.y());
-	double w2 = static_cast<double>(T2.point.x() - T0.point.x()) / (T2.point.y() - T0.point.y());
+	double w1 = static_cast<double>(t1.point.x() - t0.point.x()) / (t1.point.y() - t0.point.y());
+	double w2 = static_cast<double>(t2.point.x() - t0.point.x()) / (t2.point.y() - t0.point.y());
 
-	double x1 = T0.point.x();
-	double x2 = T0.point.x();
+	double x1 = t0.point.x();
+	double x2 = t0.point.x();
 
 	//Direction
-	int stepY = (T0.point.y() < T1.point.y()) ? 1 : -1;
-	int yStart = T0.point.y();
-	int yEnd = T1.point.y();
+	int stepY = (t0.point.y() < t1.point.y()) ? 1 : -1;
+	int yStart = t0.point.y();
+	int yEnd = t1.point.y();
 
-	for (int y = yStart; (stepY > 0 ? y <= yEnd : y >= yEnd); y += stepY) {
+	//for (int y = yStart; (stepY > 0 ? y <= yEnd : y >= yEnd); y += stepY) {
+	for (int y = yStart; (stepY > 0 ? (excludeEnd ? y < yEnd : y <= yEnd) : y >= yEnd); y += stepY) {
 		//drawing line between x1 and x2
 		int startX = std::ceil(std::min(x1, x2));
 		int endX = std::floor(std::max(x1, x2));
@@ -730,15 +733,15 @@ QColor ViewerWidget::getNearestNeighborColor(int x, int y, TVertex T0, TVertex T
 {
 	QColor color;
 
-	long d0 = (x - T0.point.x()) *(x - T0.point.x()) + (y - T0.point.y()) * (y - T0.point.y());
-	long d1 = (x - T1.point.x()) * (x - T1.point.x()) + (y - T1.point.y()) * (y - T1.point.y());
-	long d2 = (x - T2.point.x()) * (x - T2.point.x()) + (y - T2.point.y()) * (y - T2.point.y());
+	double d0 = (x - T0.point.x()) *(x - T0.point.x()) + (y - T0.point.y()) * (y - T0.point.y());
+	double d1 = (x - T1.point.x()) * (x - T1.point.x()) + (y - T1.point.y()) * (y - T1.point.y());
+	double d2 = (x - T2.point.x()) * (x - T2.point.x()) + (y - T2.point.y()) * (y - T2.point.y());
 
 	if (d0 < d1 && d0 < d2) {
 		color = T0.color;
 	}else if (d1 < d0 && d1 < d2) {
 		color = T1.color;
-	}else {
+	}else if(d2 < d0 && d2 < d1) {
 		color = T2.color;
 	}
 

@@ -84,7 +84,7 @@ public:
 	QVector<Edge> createEdgeTable(const QVector<QPoint>& points, int& yMin, int& yMax);
 
 	void fillTriangle(TVertex T0, TVertex T1, TVertex T2, int interType = 0);
-	void fillBaseTriangle(TVertex T0, TVertex T1, TVertex T2, TVertex orig0, TVertex orig1, TVertex orig2, int interType);
+	void fillBaseTriangle(TVertex T0, TVertex T1, TVertex T2, TVertex orig0, TVertex orig1, TVertex orig2, int interType, bool excludeEnd = false);
 
 	//For object type
 	void setObjectType(ObjectType type) { currentObjectType = type; }
