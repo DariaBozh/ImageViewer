@@ -7,8 +7,14 @@
     <x>0</x>
     <y>0</y>
     <width>708</width>
-    <height>690</height>
+    <height>754</height>
    </rect>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>16777215</width>
+    <height>16777215</height>
+   </size>
   </property>
   <property name="windowTitle">
    <string>ImageViewer</string>
@@ -26,7 +32,7 @@
          <x>0</x>
          <y>0</y>
          <width>345</width>
-         <height>610</height>
+         <height>674</height>
         </rect>
        </property>
       </widget>
@@ -172,6 +178,85 @@
       </widget>
      </item>
      <item>
+      <widget class="QLabel" name="label_2">
+       <property name="text">
+        <string>Set control point, angle and length for tangent vector:  </string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QGroupBox" name="groupBox_4">
+       <property name="title">
+        <string>Curves</string>
+       </property>
+       <layout class="QGridLayout" name="gridLayout_4">
+        <item row="0" column="3">
+         <widget class="QDoubleSpinBox" name="dsbLength">
+          <property name="maximum">
+           <double>500.000000000000000</double>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QToolButton" name="toolButton_2">
+          <property name="text">
+           <string>Bezier curve</string>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <attribute name="buttonGroup">
+           <string notr="true">buttonGroup</string>
+          </attribute>
+         </widget>
+        </item>
+        <item row="0" column="0">
+         <widget class="QToolButton" name="toolButtonHermite">
+          <property name="text">
+           <string>Cubic Hermite spline</string>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <attribute name="buttonGroup">
+           <string notr="true">buttonGroup</string>
+          </attribute>
+         </widget>
+        </item>
+        <item row="0" column="2">
+         <widget class="QSpinBox" name="spinBoxAngle">
+          <property name="minimum">
+           <number>-360</number>
+          </property>
+          <property name="maximum">
+           <number>360</number>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QToolButton" name="toolButton_3">
+          <property name="text">
+           <string>Coons curve</string>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <attribute name="buttonGroup">
+           <string notr="true">buttonGroup</string>
+          </attribute>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QSpinBox" name="spinBoxIndex">
+          <property name="maximum">
+           <number>1</number>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item>
       <widget class="QGroupBox" name="groupBox_3">
        <property name="title">
         <string>Transformations</string>
@@ -191,6 +276,9 @@
           </property>
           <property name="maximum">
            <number>360</number>
+          </property>
+          <property name="value">
+           <number>5</number>
           </property>
          </widget>
         </item>
@@ -220,6 +308,9 @@
           <property name="minimum">
            <double>0.010000000000000</double>
           </property>
+          <property name="value">
+           <double>1.010000000000000</double>
+          </property>
          </widget>
         </item>
         <item row="2" column="1">
@@ -227,12 +318,18 @@
           <property name="minimum">
            <double>-50.000000000000000</double>
           </property>
+          <property name="value">
+           <double>0.500000000000000</double>
+          </property>
          </widget>
         </item>
         <item row="1" column="2">
          <widget class="QDoubleSpinBox" name="dsb_yScale">
           <property name="minimum">
            <double>0.010000000000000</double>
+          </property>
+          <property name="value">
+           <double>1.010000000000000</double>
           </property>
          </widget>
         </item>

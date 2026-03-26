@@ -67,6 +67,7 @@ void ImageViewer::ViewerWidgetMouseButtonPress(ViewerWidget* w, QEvent* event)
 	bool lineSelected = ui->toolButtonDrawLine->isChecked();
 	bool circleSelected = ui->toolButtonDrawCircle->isChecked();
 	bool polygonSelected = ui->toolButtonDrawPolygon->isChecked();
+	bool hermiteSelected = ui->toolButtonHermite->isChecked();
 	
 	//Dragging
 	if (e->button() == Qt::LeftButton && !w->getDrawPolygonActivated() && !w->getDrawLineActivated() && !w->getTransformedPoints().isEmpty()) {
@@ -135,6 +136,39 @@ void ImageViewer::ViewerWidgetMouseButtonPress(ViewerWidget* w, QEvent* event)
 				ui->gbTriangle->setEnabled(true);
 				w->setObjectType(ObjectType::Triangle);
 			}
+		}
+	}
+
+	// Curve
+	if (hermiteSelected) {
+
+		if (e->button() == Qt::LeftButton) {
+			if (!w->getDrawCurveActivated()) {
+				w->clearObject();
+				w->setDrawCurveActivated(true);
+			}
+
+			HermitePoint newP;
+			newP.pos = e->pos();
+			newP.length = 150;
+			newP.angle = 0;
+			w->addHermitePoint(newP);
+
+			w->setPixel(e->pos().x(), e->pos().y(), globalColor);
+			w->update();
+			
+		}
+
+		else if (e->button() == Qt::RightButton) {
+			int size = w->getHermitePoints().size(); 
+
+			w->setDrawCurveActivated(false);
+			w->setObjectType(ObjectType::Curve);
+
+			updateCanvas(w);
+			
+			ui->spinBoxIndex->setRange(1, size);
+			ui->spinBoxIndex->setValue(1);
 		}
 	}
 
@@ -381,6 +415,36 @@ void ImageViewer::on_pbColorVertex3_clicked()
 		colorV3 = c;
 		ui->pbColorVertex3->setStyleSheet(QString("background-color: %1;").arg(c.name()));
 	}
+}
+
+void ImageViewer::on_spinBoxIndex_valueChanged(int i)
+{
+	if (i-1 >= 0 && i-1 < vW->getHermitePoints().size()) {
+		HermitePoint p = vW->getHermitePoints()[i-1];
+
+		ui->spinBoxAngle->blockSignals(true);
+		ui->spinBoxAngle->setValue(p.angle);
+		ui->spinBoxAngle->blockSignals(false);
+
+		ui->dsbLength->blockSignals(true);
+		ui->dsbLength->setValue(p.length);
+		ui->dsbLength->blockSignals(false);
+	}
+}
+void ImageViewer::on_spinBoxAngle_valueChanged(int a)
+{
+	int index = ui->spinBoxIndex->value() - 1;
+
+	vW->setHermiteAngle(index, a);
+	updateCanvas(vW); 
+}
+
+void ImageViewer::on_dsbLength_valueChanged(double l)
+{
+	int index = ui->spinBoxIndex->value() - 1;
+
+	vW->setHermiteLength(index, l);
+	updateCanvas(vW);
 }
 
 void ImageViewer::on_pushButtonSetColor_clicked()

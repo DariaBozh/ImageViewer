@@ -197,6 +197,69 @@ void ViewerWidget::closePolygon(QColor color, int algType)
 	drawLine(endpoint, startpoint, color, algType);
 }
 
+void ViewerWidget::drawHermiteCubic(QVector<HermitePoint> controlPoints, QColor color)
+{
+	int n = controlPoints.size();
+	if (n < 2) return;
+
+	int N = 50; // Because I want so
+	double dt = 1.0 / N;
+
+	for (int i = 1; i < n; i++) {
+		HermitePoint P0 = controlPoints[i-1]; // P{i-1}
+		HermitePoint P1 = controlPoints[i]; // Pi
+
+		QPointF dP0 (P0.length * cos(P0.angle * M_PI / 180.0), P0.length * sin(P0.angle * M_PI / 180.0));
+		QPointF dP1 (P1.length * cos(P1.angle * M_PI / 180.0), P1.length * sin(P1.angle * M_PI / 180.0));
+
+		QPointF Q0 = P0.pos;
+		double Ft0, Ft1, Ft2, Ft3; //Hermitian cubic polynomials
+		double t = dt;
+
+		while (t <= 1) {
+			double t2 = t * t;
+			double t3 = t2 * t;
+			Ft0 = 2 * t3 - 3 * t2 + 1;
+			Ft1 = -2 * t2 + 3 * t2;
+			Ft2 = t3 - 2 * t2 + t;
+			Ft3 = t3 - t2;
+			QPointF Q1 = P0.pos * Ft0 + P1.pos * Ft1 + dP0 * Ft2 + dP1 * Ft3;
+
+			drawLine(Q0.toPoint(), Q1.toPoint(), color);
+			Q0 = Q1;
+			t += dt;
+		}
+		drawLine(Q0.toPoint(), P1.pos.toPoint(), color);
+	}
+}
+void ViewerWidget::drawTangeantVectors(QColor color) {
+	for (const auto& p : hermitePoints) {
+		// Finding the end of the vector
+		double rad = p.angle * M_PI / 180.0;
+		QPoint target(
+			p.pos.x() + p.length * cos(rad),
+			p.pos.y() + p.length * sin(rad)
+		);
+		
+		drawLine(p.pos.toPoint(), target, color);
+	}
+}
+
+void ViewerWidget::addHermitePoint(HermitePoint point)
+{
+	hermitePoints.append(point);
+}
+void ViewerWidget::setHermiteAngle(int index, double angle) {
+	if (index >= 0 && index < hermitePoints.size()) {
+		hermitePoints[index].angle = angle;
+	}
+}
+void ViewerWidget::setHermiteLength(int index, double length) {
+	if (index >= 0 && index < hermitePoints.size()) {
+		hermitePoints[index].length = length;
+	}
+}
+
 //Filling functions
 void ViewerWidget::scanLine(const QVector<QPoint>& points, QColor color)
 {
@@ -374,7 +437,7 @@ void ViewerWidget::fillBaseTriangle(TVertex t0, TVertex t1, TVertex t2, TVertex 
 
 void ViewerWidget::drawObject(QColor color, int algType)
 {
-	if (transformedPoints.isEmpty()) return;
+	if (transformedPoints.isEmpty() && hermitePoints.isEmpty()) return;
 
 	switch (currentObjectType) {
 	case ObjectType::Line: {
@@ -410,6 +473,27 @@ void ViewerWidget::drawObject(QColor color, int algType)
 		}
 		break;
 	}
+	case ObjectType::Curve: {
+		if (hermitePoints.size() > 1) {
+			drawHermiteCubic(hermitePoints, color);
+			drawTangeantVectors(Qt::red);
+
+			// Створюємо маляра, який малюватиме по нашому QImage
+			QPainter painter(img);
+			painter.setPen(Qt::black); // Колір тексту
+			painter.setFont(QFont("Arial", 10, QFont::Bold)); // Шрифт
+
+			int i = 0;
+			for (const auto& p : hermitePoints) {
+				setPixel(p.pos.x(), p.pos.y(), color);
+
+				QString label = QString::number(i + 1); // Користувач бачить 1, 2, 3...
+				painter.drawText(p.pos.x() + 10, p.pos.y() - 10, label);
+				i++;
+			}
+		}
+		break;
+	}
 	default: break;
 	}
 
@@ -418,7 +502,9 @@ void ViewerWidget::clearObject()
 {
 	polygonPoints.clear();
 	transformedPoints.clear();
+	hermitePoints.clear();
 	drawPolygonActivated = false;
+	drawCurveActivated = false;
 	isFilled = false;
 	isTriangleFilled = false;
 	currentObjectType = ObjectType::None;

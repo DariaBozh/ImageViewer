@@ -4,19 +4,25 @@
 #include <algorithm>
 
 enum class ObjectType {
-	None, Line, Polygon, Triangle, Circle //...Curve
+	None, Line, Polygon, Triangle, Circle, Curve
 };
 
-struct TVertex {
+struct TVertex { // For triangle
 	QPointF point;
 	QColor color;
 };
 
-struct Edge { 
+struct Edge { // For filling
 	int yMin;
 	int yMax;
 	double x; // Intersection with the current line
 	double w; // w = 1/m
+};
+
+struct HermitePoint { // For curve
+	QPointF pos;     
+	double angle;  
+	double length;  
 };
 
 class ViewerWidget :public QWidget {
@@ -41,6 +47,9 @@ private:
 	TVertex v1, v2, v3; 
 	bool isTriangleFilled = false;
 	int currentInterType = 0;
+
+	bool drawCurveActivated = false;
+	QVector<HermitePoint> hermitePoints;
 
 public:
 
@@ -78,6 +87,18 @@ public:
 	void setDrawPolygonActivated(bool state) { drawPolygonActivated = state; }
 	bool getDrawPolygonActivated() { return drawPolygonActivated; }
 	void closePolygon(QColor color, int algType = 0);
+
+	//Curves
+	void drawHermiteCubic(QVector<HermitePoint> controlPoints, QColor color);
+	void drawTangeantVectors(QColor color);
+
+	void addHermitePoint(HermitePoint point);
+	void setHermiteAngle(int index, double angle);
+	QVector<HermitePoint>& getHermitePoints() { return hermitePoints; }
+	void setDrawCurveActivated(bool state) { drawCurveActivated = state; }
+	bool getDrawCurveActivated() { return drawCurveActivated; }
+
+	void setHermiteLength(int index, double length);
 
 	//Filling functions
 	void scanLine(const QVector<QPoint>& points, QColor color);

@@ -69,6 +69,10 @@ private slots:
 	void on_pbColorVertex2_clicked();
 	void on_pbColorVertex3_clicked();
 
+	void on_spinBoxIndex_valueChanged(int i);
+	void on_spinBoxAngle_valueChanged(int angle);
+	void on_dsbLength_valueChanged(double l);
+
 	//Added for reseting active state (selecting another drawing option)
 	void on_toolButtonDrawLine_clicked();
 	void on_toolButtonDrawCircle_clicked();
