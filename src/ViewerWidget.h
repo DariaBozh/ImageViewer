@@ -4,7 +4,7 @@
 #include <algorithm>
 
 enum class ObjectType {
-	None, Line, Polygon, Triangle, Circle, Curve
+	None, Line, Polygon, Triangle, Circle, HermiteCubic, BezierCurve, CoonsBSpline
 };
 
 struct TVertex { // For triangle
@@ -49,8 +49,9 @@ private:
 	int currentInterType = 0;
 
 	bool drawCurveActivated = false;
+	QVector<QPointF> curvePoints;
 	QVector<HermitePoint> hermitePoints;
-
+	
 public:
 
 	ViewerWidget(QSize imgSize, QWidget* parent = Q_NULLPTR);
@@ -91,15 +92,18 @@ public:
 	//Curves
 	void drawHermiteCubic(QVector<HermitePoint> controlPoints, QColor color);
 	void drawTangeantVectors(QColor color);
+	void drawBezierCurve(QVector<QPointF> controlPoints, QColor color);
 
-	void addHermitePoint(HermitePoint point);
+	void addHermitePoint(HermitePoint point) { hermitePoints.append(point); };
 	void setHermiteAngle(int index, double angle);
+	void setHermiteLength(int index, double length);
 	QVector<HermitePoint>& getHermitePoints() { return hermitePoints; }
+	
+	void addCurvePoint(QPointF point) { curvePoints.append(point); };
+	QVector<QPointF> getCurvePoints() { return curvePoints; }
 	void setDrawCurveActivated(bool state) { drawCurveActivated = state; }
 	bool getDrawCurveActivated() { return drawCurveActivated; }
-
-	void setHermiteLength(int index, double length);
-
+	
 	//Filling functions
 	void scanLine(const QVector<QPoint>& points, QColor color);
 	QVector<Edge> createEdgeTable(const QVector<QPoint>& points, int& yMin, int& yMax);
@@ -109,6 +113,7 @@ public:
 
 	//For object type
 	void setObjectType(ObjectType type) { currentObjectType = type; }
+	ObjectType getObjectType() { return currentObjectType; }
 	void drawObject(QColor color, int algType);
 	void clearObject();
 

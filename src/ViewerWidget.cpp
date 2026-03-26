@@ -244,11 +244,63 @@ void ViewerWidget::drawTangeantVectors(QColor color) {
 		drawLine(p.pos.toPoint(), target, color);
 	}
 }
+void ViewerWidget::drawBezierCurve(QVector<QPointF> controlPoints, QColor color)
+{// De Casteljau's algorithm
 
-void ViewerWidget::addHermitePoint(HermitePoint point)
-{
-	hermitePoints.append(point);
+	int n = controlPoints.size();
+	if (n < 2) return;
+
+	QPointF** P = new QPointF*[n];
+	for (int i = 0; i < n; i++) {
+		P[i] = new QPointF[n-i];
+	}
+
+	for (int j = 0; j < n; j++) {
+		P[0][j] = controlPoints[j];
+	}
+	
+	int N = 100;
+	double dt = 1.0 / N;
+	double t = dt;
+
+	QPointF Q0 = controlPoints.first();
+
+	while (t <= 1.001) { // to account for the double precision error
+		for (int i = 1; i < n; i++) {
+			for (int j = 0; j < n - i; j++) {
+				P[i][j] = (1 - t) * P[i-1][j] + t * P[i-1][j+1];
+			}
+		}
+
+		QPointF Q1 = P[n - 1][0];
+		drawLine(Q0.toPoint(), Q1.toPoint(), color);
+		Q0 = Q1;
+		t += dt;
+	}
+	drawLine(Q0.toPoint(), controlPoints.last().toPoint(), color);
+
+	for (int i = 0; i < n; i++) {
+		delete[] P[i];
+	}
+	delete[] P;
+
+	//// Or make it easier:
+	//while (t <= 1.001) {
+	//	QVector<QPointF> temp = controlPoints; 
+	//	while (temp.size() > 1) {
+	//		for (int i = 0; i < temp.size() - 1; i++) {
+	//			temp[i] = (1 - t) * temp[i] + t * temp[i + 1];
+	//		}
+	//		temp.pop_back(); // "Сплющуємо" піраміду
+	//	}
+	//	QPointF Q1 = temp[0];
+	//	drawLine(Q0.toPoint(), Q1.toPoint(), color);
+	//	Q0 = Q1;
+	//	t += dt;
+	//}
+	////...
 }
+
 void ViewerWidget::setHermiteAngle(int index, double angle) {
 	if (index >= 0 && index < hermitePoints.size()) {
 		hermitePoints[index].angle = angle;
@@ -437,7 +489,7 @@ void ViewerWidget::fillBaseTriangle(TVertex t0, TVertex t1, TVertex t2, TVertex 
 
 void ViewerWidget::drawObject(QColor color, int algType)
 {
-	if (transformedPoints.isEmpty() && hermitePoints.isEmpty()) return;
+	if (transformedPoints.isEmpty() && hermitePoints.isEmpty() && curvePoints.isEmpty()) return;
 
 	switch (currentObjectType) {
 	case ObjectType::Line: {
@@ -473,23 +525,34 @@ void ViewerWidget::drawObject(QColor color, int algType)
 		}
 		break;
 	}
-	case ObjectType::Curve: {
+	case ObjectType::HermiteCubic: {
 		if (hermitePoints.size() > 1) {
 			drawHermiteCubic(hermitePoints, color);
 			drawTangeantVectors(Qt::red);
 
 			// Створюємо маляра, який малюватиме по нашому QImage
 			QPainter painter(img);
-			painter.setPen(Qt::black); // Колір тексту
-			painter.setFont(QFont("Arial", 10, QFont::Bold)); // Шрифт
+			painter.setPen(Qt::black); 
+			painter.setFont(QFont("Arial", 10, QFont::Medium));
 
 			int i = 0;
 			for (const auto& p : hermitePoints) {
 				setPixel(p.pos.x(), p.pos.y(), color);
 
-				QString label = QString::number(i + 1); // Користувач бачить 1, 2, 3...
+				QString label = QString::number(i + 1); 
 				painter.drawText(p.pos.x() + 10, p.pos.y() - 10, label);
 				i++;
+			}
+		}
+		break;
+	}
+	case ObjectType::BezierCurve: {
+		if (curvePoints.size() > 1) {
+			drawBezierCurve(curvePoints, color);
+
+			int i = 0;
+			for (const auto& p : curvePoints) {
+				setPixel(p.x(), p.y(), color);
 			}
 		}
 		break;
@@ -503,10 +566,13 @@ void ViewerWidget::clearObject()
 	polygonPoints.clear();
 	transformedPoints.clear();
 	hermitePoints.clear();
+	curvePoints.clear();
+
 	drawPolygonActivated = false;
 	drawCurveActivated = false;
 	isFilled = false;
 	isTriangleFilled = false;
+
 	currentObjectType = ObjectType::None;
 	clear();
 } 

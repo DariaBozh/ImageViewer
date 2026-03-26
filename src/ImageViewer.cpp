@@ -68,6 +68,7 @@ void ImageViewer::ViewerWidgetMouseButtonPress(ViewerWidget* w, QEvent* event)
 	bool circleSelected = ui->toolButtonDrawCircle->isChecked();
 	bool polygonSelected = ui->toolButtonDrawPolygon->isChecked();
 	bool hermiteSelected = ui->toolButtonHermite->isChecked();
+	bool bezierSelected = ui->toolButtonBezier->isChecked();
 	
 	//Dragging
 	if (e->button() == Qt::LeftButton && !w->getDrawPolygonActivated() && !w->getDrawLineActivated() && !w->getTransformedPoints().isEmpty()) {
@@ -163,12 +164,37 @@ void ImageViewer::ViewerWidgetMouseButtonPress(ViewerWidget* w, QEvent* event)
 			int size = w->getHermitePoints().size(); 
 
 			w->setDrawCurveActivated(false);
-			w->setObjectType(ObjectType::Curve);
+			w->setObjectType(ObjectType::HermiteCubic);
 
 			updateCanvas(w);
 			
 			ui->spinBoxIndex->setRange(1, size);
 			ui->spinBoxIndex->setValue(1);
+		}
+	}
+	if (bezierSelected) {
+
+		if (e->button() == Qt::LeftButton) {
+			if (w->getObjectType() != ObjectType::None && !w->getDrawCurveActivated()) {
+				return;
+			}
+			if (!w->getDrawCurveActivated()) {
+				w->clearObject();
+				w->setDrawCurveActivated(true);
+				w->setObjectType(ObjectType::None);
+			}
+
+			w->addCurvePoint(e->pos());
+			w->setPixel(e->pos().x(), e->pos().y(), globalColor);
+			w->update();
+		}
+
+		else if (e->button() == Qt::RightButton) {
+			if (w->getCurvePoints().size() > 1) {
+				w->setDrawCurveActivated(false);
+				w->setObjectType(ObjectType::BezierCurve);
+				updateCanvas(w);
+			}
 		}
 	}
 
@@ -438,7 +464,6 @@ void ImageViewer::on_spinBoxAngle_valueChanged(int a)
 	vW->setHermiteAngle(index, a);
 	updateCanvas(vW); 
 }
-
 void ImageViewer::on_dsbLength_valueChanged(double l)
 {
 	int index = ui->spinBoxIndex->value() - 1;
