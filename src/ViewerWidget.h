@@ -93,6 +93,7 @@ public:
 	void drawHermiteCubic(QVector<HermitePoint> controlPoints, QColor color);
 	void drawTangeantVectors(QColor color);
 	void drawBezierCurve(QVector<QPointF> controlPoints, QColor color);
+	void drawCoonsBSpline(QVector<QPointF> controlPoints, QColor color);
 
 	void addHermitePoint(HermitePoint point) { hermitePoints.append(point); };
 	void setHermiteAngle(int index, double angle);

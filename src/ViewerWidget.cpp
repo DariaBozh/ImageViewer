@@ -220,7 +220,7 @@ void ViewerWidget::drawHermiteCubic(QVector<HermitePoint> controlPoints, QColor 
 			double t2 = t * t;
 			double t3 = t2 * t;
 			Ft0 = 2 * t3 - 3 * t2 + 1;
-			Ft1 = -2 * t2 + 3 * t2;
+			Ft1 = -2 * t3 + 3 * t2;
 			Ft2 = t3 - 2 * t2 + t;
 			Ft3 = t3 - t2;
 			QPointF Q1 = P0.pos * Ft0 + P1.pos * Ft1 + dP0 * Ft2 + dP1 * Ft3;
@@ -299,6 +299,35 @@ void ViewerWidget::drawBezierCurve(QVector<QPointF> controlPoints, QColor color)
 	//	t += dt;
 	//}
 	////...
+}
+void ViewerWidget::drawCoonsBSpline(QVector<QPointF> controlPoints, QColor color)
+{
+	int n = controlPoints.size();
+	if (n < 4) return;
+
+	int N = 100;
+	double dt = 1.0 / N;
+
+	for (int i = 3; i < n; i++) {
+		double t = 0;
+		// for t=0: Bt0 = 1/6, Bt1 = 4/6, Bt2 = 1/6, Bt3 = 0
+		QPointF Q0 = controlPoints[i - 3] * (1.0/6) + controlPoints[i - 2] * (4.0 / 6) + controlPoints[i - 1] * (1.0 / 6);
+	
+		while (t < 1) {
+			t += dt;
+			double t2 = t * t;
+			double t3 = t * t2;
+
+			double Bt0 = -(1.0 / 6) * t3 + (1.0 / 2) * t2 - (1.0 / 2) * t + (1.0 / 6);
+			double Bt1 = (1.0 / 2) * t3 - t2 +(2.0 / 3);
+			double Bt2 = -(1.0 / 2) * t3 + (1.0 / 2) * t2 + (1.0 / 2) * t + (1.0 / 6);
+			double Bt3 = (1.0 / 6) * t3;
+
+			QPointF Q1 = controlPoints[i - 3] * Bt0 + controlPoints[i - 2] * Bt1 + controlPoints[i - 1] * Bt2 + controlPoints[i] * Bt3;
+			drawLine(Q0.toPoint(), Q1.toPoint(), color);
+			Q0 = Q1;
+		}
+	}
 }
 
 void ViewerWidget::setHermiteAngle(int index, double angle) {
@@ -532,14 +561,14 @@ void ViewerWidget::drawObject(QColor color, int algType)
 
 			// Створюємо маляра, який малюватиме по нашому QImage
 			QPainter painter(img);
-			painter.setPen(Qt::black); 
+			painter.setPen(Qt::black);
 			painter.setFont(QFont("Arial", 10, QFont::Medium));
 
 			int i = 0;
 			for (const auto& p : hermitePoints) {
 				setPixel(p.pos.x(), p.pos.y(), color);
 
-				QString label = QString::number(i + 1); 
+				QString label = QString::number(i + 1);
 				painter.drawText(p.pos.x() + 10, p.pos.y() - 10, label);
 				i++;
 			}
@@ -549,6 +578,17 @@ void ViewerWidget::drawObject(QColor color, int algType)
 	case ObjectType::BezierCurve: {
 		if (curvePoints.size() > 1) {
 			drawBezierCurve(curvePoints, color);
+
+			int i = 0;
+			for (const auto& p : curvePoints) {
+				setPixel(p.x(), p.y(), color);
+			}
+		}
+		break;
+	}
+	case ObjectType::CoonsBSpline: {
+		if (curvePoints.size() > 3) {
+			drawCoonsBSpline(curvePoints, color);
 
 			int i = 0;
 			for (const auto& p : curvePoints) {
@@ -895,7 +935,7 @@ QColor ViewerWidget::getNearestNeighborColor(int x, int y, TVertex T0, TVertex T
 		color = T1.color;
 	}else if(d2 < d0 && d2 < d1) {
 		color = T2.color;
-	}
+	}else { color = T2.color; }
 
 	return color;
 }
