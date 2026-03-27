@@ -145,6 +145,9 @@ void ImageViewer::ViewerWidgetMouseButtonPress(ViewerWidget* w, QEvent* event)
 	if (hermiteSelected) {
 
 		if (e->button() == Qt::LeftButton) {
+			if (w->getObjectType() != ObjectType::None && !w->getDrawCurveActivated()) {
+				return;
+			}
 			if (!w->getDrawCurveActivated()) {
 				w->clearObject();
 				w->setDrawCurveActivated(true);

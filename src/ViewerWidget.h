@@ -33,9 +33,9 @@ private:
 	uchar* data = nullptr; //pre pristup
 
 	bool drawLineActivated = false;
-	bool drawPolygonActivated = false;
 	QPoint drawLineBegin = QPoint(0, 0);
 
+	bool drawPolygonActivated = false;
 	QVector<QPoint> polygonPoints;
 	QVector<QPoint> transformedPoints;
 
