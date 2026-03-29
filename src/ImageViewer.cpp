@@ -312,59 +312,59 @@ void ImageViewer::on_actionExit_triggered()
 //Added for reseting active state (selecting another drawing option)
 void ImageViewer::on_toolButtonDrawLine_clicked()
 {
-	if (vW->getDrawState() == DrawState::Ready) {
-		vW->setObjectType(ObjectType::Line);
+	if (vW->getDrawState() != DrawState::Ready) {
+		vW->clearObject();   // discard whatever was in progress
+		vW->update();
+		ui->gbTriangle->setEnabled(false);
 	}
-	else {
-		qDebug() << "You need to clear object first";
-	}
+	vW->setObjectType(ObjectType::Line);
 }
 void ImageViewer::on_toolButtonDrawPolygon_clicked()
 {
-	if (vW->getDrawState() == DrawState::Ready) {
-		vW->setObjectType(ObjectType::Polygon);
+	if (vW->getDrawState() != DrawState::Ready) {
+		vW->clearObject();   
+		vW->update();
+		ui->gbTriangle->setEnabled(false);
 	}
-	else {
-		qDebug() << "You need to clear object first";
-	}
+	vW->setObjectType(ObjectType::Polygon);
 
 }
 void ImageViewer::on_toolButtonDrawCircle_clicked()
 {
-	if (vW->getDrawState() == DrawState::Ready) {
-		vW->setObjectType(ObjectType::Circle);
+	if (vW->getDrawState() != DrawState::Ready) {
+		vW->clearObject();  
+		vW->update();
+		ui->gbTriangle->setEnabled(false);
 	}
-	else {
-		qDebug() << "You need to clear object first";
-	}
+	vW->setObjectType(ObjectType::Circle);
 }
 void ImageViewer::on_toolButtonHermite_clicked()
 {
-	if (vW->getDrawState() == DrawState::Ready) {
-		vW->setObjectType(ObjectType::HermiteCubic);
+	if (vW->getDrawState() != DrawState::Ready) {
+		vW->clearObject();
+		vW->update();
+		ui->gbTriangle->setEnabled(false);
 	}
-	else {
-		qDebug() << "You need to clear object first";
-	}
+	vW->setObjectType(ObjectType::HermiteCubic);
 }
 void ImageViewer::on_toolButtonBezier_clicked()
 {
-	if (vW->getDrawState() == DrawState::Ready) {
-		vW->setObjectType(ObjectType::BezierCurve);
+	if (vW->getDrawState() != DrawState::Ready) {
+		vW->clearObject();
+		vW->update();
+		ui->gbTriangle->setEnabled(false);
 	}
-	else {
-		qDebug() << "You need to clear object first";
-	}
+	vW->setObjectType(ObjectType::BezierCurve);
 
 }
 void ImageViewer::on_toolButtonCoonse_clicked()
 {
-	if (vW->getDrawState() == DrawState::Ready) {
-		vW->setObjectType(ObjectType::CoonsBSpline);
+	if (vW->getDrawState() != DrawState::Ready) {
+		vW->clearObject();
+		vW->update();
+		ui->gbTriangle->setEnabled(false);
 	}
-	else {
-		qDebug() << "You need to clear object first";
-	}
+	vW->setObjectType(ObjectType::CoonsBSpline);
 }
 
 void ImageViewer::on_pushButtonClearObject_clicked()
@@ -395,7 +395,6 @@ void ImageViewer::on_pushButtonFill_clicked()
 		vW->scanLine(points, globalColor);
 	}
 	
-	//updateCanvas(vW); //fiiling twice
 }
 
 void ImageViewer::on_pushButtonRotate_clicked()

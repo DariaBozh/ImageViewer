@@ -542,15 +542,16 @@ void ViewerWidget::drawObject(QColor color, int algType)
 	}
 	case ObjectType::Triangle: {
 		QVector<QPoint> clipped = clipPolygon(transformedPoints);
-		if (!clipped.isEmpty()) {
-			drawPolygon(clipped, color, algType);
-		}
 
 		if (isTriangleFilled && transformedPoints.size() >= 3) {
 			TVertex currentV1 = { transformedPoints[0], v1.color };
 			TVertex currentV2 = { transformedPoints[1], v2.color };
 			TVertex currentV3 = { transformedPoints[2], v3.color };
 			fillTriangle(currentV1, currentV2, currentV3, currentInterType);
+		}
+
+		if (!clipped.isEmpty()) {
+			drawPolygon(clipped, color, algType);
 		}
 		break;
 	}

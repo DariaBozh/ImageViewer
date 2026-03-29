@@ -262,10 +262,27 @@
         <string>Transformations</string>
        </property>
        <layout class="QGridLayout" name="gridLayout_2">
+        <item row="2" column="1">
+         <widget class="QDoubleSpinBox" name="dsb_Slope">
+          <property name="minimum">
+           <double>-50.000000000000000</double>
+          </property>
+          <property name="value">
+           <double>0.500000000000000</double>
+          </property>
+         </widget>
+        </item>
         <item row="0" column="0">
          <widget class="QPushButton" name="pushButtonRotate">
           <property name="text">
            <string>Rotate</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QPushButton" name="pushButtonScale">
+          <property name="text">
+           <string>Scale (x, y)</string>
           </property>
          </widget>
         </item>
@@ -282,10 +299,13 @@
           </property>
          </widget>
         </item>
-        <item row="1" column="0">
-         <widget class="QPushButton" name="pushButtonScale">
-          <property name="text">
-           <string>Scale (x, y)</string>
+        <item row="1" column="2">
+         <widget class="QDoubleSpinBox" name="dsb_yScale">
+          <property name="minimum">
+           <double>0.010000000000000</double>
+          </property>
+          <property name="value">
+           <double>1.010000000000000</double>
           </property>
          </widget>
         </item>
@@ -293,13 +313,6 @@
          <widget class="QPushButton" name="pushButtonSymmetry">
           <property name="text">
            <string>Symmetry</string>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="0">
-         <widget class="QPushButton" name="pushButtonSlope">
-          <property name="text">
-           <string>Slope</string>
           </property>
          </widget>
         </item>
@@ -313,23 +326,10 @@
           </property>
          </widget>
         </item>
-        <item row="2" column="1">
-         <widget class="QDoubleSpinBox" name="dsb_Slope">
-          <property name="minimum">
-           <double>-50.000000000000000</double>
-          </property>
-          <property name="value">
-           <double>0.500000000000000</double>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="2">
-         <widget class="QDoubleSpinBox" name="dsb_yScale">
-          <property name="minimum">
-           <double>0.010000000000000</double>
-          </property>
-          <property name="value">
-           <double>1.010000000000000</double>
+        <item row="2" column="0">
+         <widget class="QPushButton" name="pushButtonSlope">
+          <property name="text">
+           <string>Slope</string>
           </property>
          </widget>
         </item>
