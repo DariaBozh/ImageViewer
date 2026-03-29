@@ -722,7 +722,6 @@ QVector<QPoint> ViewerWidget::displacement(QPoint origin, QPoint newP, const QVe
 
 	setTransformedPoints(newPoints);
 	setPolygonPoints(newPoints);
-	update();
 
 	return newPoints;
 }

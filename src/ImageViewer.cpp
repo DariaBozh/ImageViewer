@@ -20,6 +20,9 @@ ImageViewer::ImageViewer(QWidget* parent)
 	ui->pushButtonSetColor->setStyleSheet(style_sheet);
 
 	ui->gbTriangle->setEnabled(false);
+	ui->spinBoxIndex->setEnabled(false);
+	ui->spinBoxAngle->setEnabled(false);
+	ui->dsbLength->setEnabled(false);
 }
 
 // Event filters
@@ -158,6 +161,10 @@ void ImageViewer::ViewerWidgetMouseButtonPress(ViewerWidget* w, QEvent* event)
 			else if (type == ObjectType::HermiteCubic) {
 				int size = w->getHermitePoints().size();
 				updateCanvas(w); //calls drawObject
+
+				ui->spinBoxIndex->setEnabled(true);
+				ui->spinBoxAngle->setEnabled(true);
+				ui->dsbLength->setEnabled(true);
 
 				ui->spinBoxIndex->setRange(1, size);
 				ui->spinBoxIndex->setValue(1);
@@ -320,6 +327,7 @@ void ImageViewer::on_toolButtonDrawPolygon_clicked()
 	else {
 		qDebug() << "You need to clear object first";
 	}
+
 }
 void ImageViewer::on_toolButtonDrawCircle_clicked()
 {
@@ -347,6 +355,7 @@ void ImageViewer::on_toolButtonBezier_clicked()
 	else {
 		qDebug() << "You need to clear object first";
 	}
+
 }
 void ImageViewer::on_toolButtonCoonse_clicked()
 {
@@ -362,6 +371,11 @@ void ImageViewer::on_pushButtonClearObject_clicked()
 {
 	vW->clearObject();
 	vW->update();
+
+	ui->spinBoxIndex->setEnabled(false);
+	ui->spinBoxAngle->setEnabled(false);
+	ui->dsbLength->setEnabled(false);
+	ui->gbTriangle->setEnabled(false);
 }
 void ImageViewer::on_pushButtonFill_clicked()
 {
@@ -381,7 +395,7 @@ void ImageViewer::on_pushButtonFill_clicked()
 		vW->scanLine(points, globalColor);
 	}
 	
-	updateCanvas(vW);
+	//updateCanvas(vW); //fiiling twice
 }
 
 void ImageViewer::on_pushButtonRotate_clicked()
@@ -422,17 +436,36 @@ void ImageViewer::on_pushButtonSlope_clicked()
 }
 void ImageViewer::on_pushButtonSymmetry_clicked()
 {
-	if (vW->getTransformedPoints().isEmpty()) return;
+	QVector<QPoint> pts = vW->getTransformedPoints();
+	if (pts.isEmpty()) {
+		pts = vW->getPolygonPoints();
+	}
+	if (pts.size() < 2) return;
 
-	QPoint A = vW->getTransformedPoints()[0];
-	QPoint B = vW->getTransformedPoints()[1];
+	QVector<QPoint> result;
+	ObjectType type = vW->getObjectType();
 
-	QVector<QPoint> polygonSymmetric = vW->symmetry(A, B, vW->getTransformedPoints());
-	vW->setTransformedPoints(polygonSymmetric);
+	if (type == ObjectType::Line) {
+		//Normal vector to a line
+		QPoint p1 = pts[0];
+		QPoint p2 = pts[1];
 
-	updateCanvas(vW);
+		int dx = p2.x() - p1.x();
+		int dy = p2.y() - p1.y();
+
+		// Find the point on the perpendicular: n = (-dy, dx)
+		QPoint axisPoint(p1.x() - dy, p1.y() + dx);
+		result = vW->symmetry(p1, axisPoint, pts);
+	}
+	else if (type == ObjectType::Polygon || type == ObjectType::Triangle) {
+		result = vW->symmetry(pts[0], pts[1], pts);
+	}
+
+	if (!result.isEmpty()) {
+		vW->setTransformedPoints(result);
+		updateCanvas(vW);
+	}
 }
-
 void ImageViewer::on_pbColorVertex1_clicked()
 {
 	QColor c = QColorDialog::getColor(colorV1, this, "Select Color for Vertex 1");
