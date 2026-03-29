@@ -603,18 +603,16 @@ void ViewerWidget::drawObject(QColor color, int algType)
 }
 void ViewerWidget::clearObject()
 {
+	clear();
 	polygonPoints.clear();
 	transformedPoints.clear();
 	hermitePoints.clear();
 	curvePoints.clear();
 
-	drawPolygonActivated = false;
-	drawCurveActivated = false;
 	isFilled = false;
 	isTriangleFilled = false;
 
-	currentObjectType = ObjectType::None;
-	clear();
+	currentDrawState = DrawState::Ready;
 } 
 
 QVector<QPoint> ViewerWidget::rotation(const QVector<QPoint>& points, double a, QPoint origin)

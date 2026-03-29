@@ -7,6 +7,10 @@ enum class ObjectType {
 	None, Line, Polygon, Triangle, Circle, HermiteCubic, BezierCurve, CoonsBSpline
 };
 
+enum class DrawState {
+	Ready, InProgress, Finished
+};
+
 struct TVertex { // For triangle
 	QPointF point;
 	QColor color;
@@ -32,14 +36,15 @@ private:
 	QImage* img = nullptr; //ma strukturu, v ktorom je smernik s baitami, reprezentujucimi pixeli; ulozene v 1D pole 
 	uchar* data = nullptr; //pre pristup
 
-	bool drawLineActivated = false;
 	QPoint drawLineBegin = QPoint(0, 0);
 
-	bool drawPolygonActivated = false;
 	QVector<QPoint> polygonPoints;
 	QVector<QPoint> transformedPoints;
+	QVector<QPointF> curvePoints;
+	QVector<HermitePoint> hermitePoints;
 
 	ObjectType currentObjectType = ObjectType::None; 
+	DrawState currentDrawState = DrawState::Ready;
 
 	bool isFilled = false;
 	QColor fillColor;
@@ -47,10 +52,6 @@ private:
 	TVertex v1, v2, v3; 
 	bool isTriangleFilled = false;
 	int currentInterType = 0;
-
-	bool drawCurveActivated = false;
-	QVector<QPointF> curvePoints;
-	QVector<HermitePoint> hermitePoints;
 	
 public:
 
@@ -76,8 +77,6 @@ public:
 
 	void setDrawLineBegin(QPoint begin) { drawLineBegin = begin; }
 	QPoint getDrawLineBegin() { return drawLineBegin; }
-	void setDrawLineActivated(bool state) { drawLineActivated = state; }
-	bool getDrawLineActivated() { return drawLineActivated; }
 
 	void addPolygonPoint(QPoint point);
 	void setPolygonPoints(QVector<QPoint> points) { polygonPoints = points; };
@@ -85,8 +84,6 @@ public:
 	QVector<QPoint> getPolygonPoints() { return polygonPoints; }
 	QVector<QPoint> getTransformedPoints() { return transformedPoints; }
 		
-	void setDrawPolygonActivated(bool state) { drawPolygonActivated = state; }
-	bool getDrawPolygonActivated() { return drawPolygonActivated; }
 	void closePolygon(QColor color, int algType = 0);
 
 	//Curves
@@ -102,8 +99,6 @@ public:
 	
 	void addCurvePoint(QPointF point) { curvePoints.append(point); };
 	QVector<QPointF> getCurvePoints() { return curvePoints; }
-	void setDrawCurveActivated(bool state) { drawCurveActivated = state; }
-	bool getDrawCurveActivated() { return drawCurveActivated; }
 	
 	//Filling functions
 	void scanLine(const QVector<QPoint>& points, QColor color);
@@ -115,6 +110,9 @@ public:
 	//For object type
 	void setObjectType(ObjectType type) { currentObjectType = type; }
 	ObjectType getObjectType() { return currentObjectType; }
+	void setDrawState(DrawState state) { currentDrawState = state; }
+	DrawState getDrawState() { return currentDrawState; }
+
 	void drawObject(QColor color, int algType);
 	void clearObject();
 

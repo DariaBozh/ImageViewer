@@ -77,10 +77,13 @@ private slots:
 	void on_spinBoxAngle_valueChanged(int angle);
 	void on_dsbLength_valueChanged(double l);
 
-	//Added for reseting active state (selecting another drawing option)
-	//Do I really nedd this?
+	//Added for reseting active state 
 	void on_toolButtonDrawLine_clicked();
+	void on_toolButtonDrawPolygon_clicked();
 	void on_toolButtonDrawCircle_clicked();
+	void on_toolButtonHermite_clicked();
+	void on_toolButtonBezier_clicked();
+	void on_toolButtonCoonse_clicked();
 
 	//Tools slots
 	void on_pushButtonSetColor_clicked();

@@ -64,166 +64,108 @@ bool ImageViewer::ViewerWidgetEventFilter(QObject* obj, QEvent* event)
 void ImageViewer::ViewerWidgetMouseButtonPress(ViewerWidget* w, QEvent* event)
 {
 	QMouseEvent* e = static_cast<QMouseEvent*>(event);
-	bool lineSelected = ui->toolButtonDrawLine->isChecked();
-	bool circleSelected = ui->toolButtonDrawCircle->isChecked();
-	bool polygonSelected = ui->toolButtonDrawPolygon->isChecked();
-	bool hermiteSelected = ui->toolButtonHermite->isChecked();
-	bool bezierSelected = ui->toolButtonBezier->isChecked();
-	bool coonsSelected = ui->toolButtonCoonse->isChecked();
-	
+
+	DrawState state = w->getDrawState();
+	ObjectType type = w->getObjectType();
+
 	//Dragging
-	if (e->button() == Qt::LeftButton && !w->getDrawPolygonActivated() && !w->getDrawLineActivated() && !w->getTransformedPoints().isEmpty()) {
+	if (state == DrawState::Finished && e->button() == Qt::LeftButton && !w->getTransformedPoints().isEmpty()) {
 		isDragging = true;
 		setLastMousePos(e->pos().x(), e->pos().y());
 		return;
 	}
 
-	//Line or circle
-	if (e->button() == Qt::LeftButton && (lineSelected || circleSelected )) //Corresponding button is pressed
-	{
-		if (w->getDrawLineActivated()) {
-			if (lineSelected){
-				w->drawLine(w->getDrawLineBegin(), e->pos(), globalColor, ui->comboBoxLineAlg->currentIndex());
+	// If nothing is selected or we finished drawing object, then ignore clicks (but not when its dragging)
+	if (type == ObjectType::None || state == DrawState::Finished) return;
+
+	if (e->button() == Qt::LeftButton) {
+		if (state == DrawState::Ready) {
+			w->setDrawState(DrawState::InProgress); //first click
+
+			if (type == ObjectType::Line || type == ObjectType::Circle) {
+				w->setDrawLineBegin(e->pos());
+				if (type == ObjectType::Line) w->addPolygonPoint(e->pos());
+			}
+			else if (type == ObjectType::Polygon || type == ObjectType::Triangle) {
 				w->addPolygonPoint(e->pos());
 			}
-			else if (circleSelected) {
-				w->drawCircle(w->getDrawLineBegin(), e->pos(), globalColor);
+			else if (type == ObjectType::BezierCurve || type == ObjectType::CoonsBSpline) {
+				w->addCurvePoint(e->pos());
 			}
-			w->setDrawLineActivated(false);
-			w->setObjectType(ObjectType::Line);
-		}
-		else {
-			w->setDrawLineBegin(e->pos()); //First point
-			w->setDrawLineActivated(true);
-
-			w->clearObject();
-			w->addPolygonPoint(e->pos());
+			else if (type == ObjectType::HermiteCubic) {
+				HermitePoint newP;
+				newP.pos = e->pos();
+				newP.length = 150;
+				newP.angle = 0;
+				w->addHermitePoint(newP);
+			}
 
 			w->setPixel(e->pos().x(), e->pos().y(), globalColor);
 			w->update();
 		}
-	}
-
-	//Polygon (or triangle specifically)
-	if (polygonSelected) {
-
-		if (e->button() == Qt::LeftButton) {
-
-			if (!w->getDrawPolygonActivated()) {
-				w->clearObject();
-				w->setDrawPolygonActivated(true);
+		else if (state == DrawState::InProgress) {
+			if (type == ObjectType::Line) {
+				w->setDrawState(DrawState::Finished); // For line second click is finish
+				w->drawLine(w->getDrawLineBegin(), e->pos(), globalColor, ui->comboBoxLineAlg->currentIndex());
+				w->addPolygonPoint(e->pos());
+			} 
+			else if (type == ObjectType::Circle) {
+				w->setDrawState(DrawState::Finished);
+				w->drawCircle(w->getDrawLineBegin(), e->pos(), globalColor);
 			}
+			else if (type == ObjectType::Polygon || type == ObjectType::Triangle) {
+				w->addPolygonPoint(e->pos()); //Just continue adding points
 
-			w->addPolygonPoint(e->pos());
-			int size = w->getPolygonPoints().size();
-
-			if (size > 1) {
-				w->drawLine(w->getTransformedPoints()[size - 2], e->pos(), globalColor, ui->comboBoxLineAlg->currentIndex());
+				int size = w->getPolygonPoints().size();
+				w->drawLine(w->getPolygonPoints()[size - 2], e->pos(), globalColor, ui->comboBoxLineAlg->currentIndex());
 			}
-			else {
+			else if (type == ObjectType::BezierCurve || type == ObjectType::CoonsBSpline) {
+				w->addCurvePoint(e->pos());
+				w->setPixel(e->pos().x(), e->pos().y(), globalColor);
+				w->update();
+			}
+			else if (type == ObjectType::HermiteCubic) {
+				HermitePoint newP;
+				newP.pos = e->pos();
+				newP.length = 150;
+				newP.angle = 0;
+				w->addHermitePoint(newP);
 				w->setPixel(e->pos().x(), e->pos().y(), globalColor);
 				w->update();
 			}
 		}
-
-		else if (e->button() == Qt::RightButton) {
-			w->setTransformedPoints(w->getPolygonPoints()); // Ініціалізуємо робочий вектор
-			w->closePolygon(globalColor, ui->comboBoxLineAlg->currentIndex());
-			w->setDrawPolygonActivated(false);
-			w->setObjectType(ObjectType::Polygon);
-			w->update();
-
-			const QVector<QPoint>& n = w->getTransformedPoints();
-			if (n.size() == 3) {
-				ui->gbTriangle->setEnabled(true);
-				w->setObjectType(ObjectType::Triangle);
-			}
-		}
 	}
+	else if (e->button() == Qt::RightButton) {
 
-	// Curve
-	if (hermiteSelected) {
+		if (state == DrawState::InProgress){
+			w->setDrawState(DrawState::Finished);
 
-		if (e->button() == Qt::LeftButton) {
-			if (w->getObjectType() != ObjectType::None && !w->getDrawCurveActivated()) {
-				return;
-			}
-			if (!w->getDrawCurveActivated()) {
-				w->clearObject();
-				w->setDrawCurveActivated(true);
-			}
+			if (type == ObjectType::Polygon || type == ObjectType::Triangle) {
+				w->setTransformedPoints(w->getPolygonPoints()); // Ініціалізуємо робочий вектор
+				w->closePolygon(globalColor, ui->comboBoxLineAlg->currentIndex());
 
-			HermitePoint newP;
-			newP.pos = e->pos();
-			newP.length = 150;
-			newP.angle = 0;
-			w->addHermitePoint(newP);
-
-			w->setPixel(e->pos().x(), e->pos().y(), globalColor);
-			w->update();
-			
-		}
-
-		else if (e->button() == Qt::RightButton) {
-			int size = w->getHermitePoints().size();
-
-			w->setDrawCurveActivated(false);
-			w->setObjectType(ObjectType::HermiteCubic);
-
-			updateCanvas(w);
-			
-			ui->spinBoxIndex->setRange(1, size);
-			ui->spinBoxIndex->setValue(1);
-		}
-	}
-	if (bezierSelected) {
-
-		if (e->button() == Qt::LeftButton) {
-			if (w->getObjectType() != ObjectType::None && !w->getDrawCurveActivated()) {
-				return;
-			}
-			if (!w->getDrawCurveActivated()) {
-				w->clearObject();
-				w->setDrawCurveActivated(true);
-				w->setObjectType(ObjectType::None);
-			}
-
-			w->addCurvePoint(e->pos());
-			w->setPixel(e->pos().x(), e->pos().y(), globalColor);
-			w->update();
-		}
-
-		else if (e->button() == Qt::RightButton) {
-			if (w->getCurvePoints().size() > 1) {
-				w->setDrawCurveActivated(false);
-				w->setObjectType(ObjectType::BezierCurve);
+				const QVector<QPoint>& n = w->getTransformedPoints();
+				if (n.size() == 3) {
+					ui->gbTriangle->setEnabled(true);
+					w->setObjectType(ObjectType::Triangle);
+				}
+				else {
+					ui->gbTriangle->setEnabled(false); // Ховаємо налаштування трикутника
+					w->setObjectType(ObjectType::Polygon);  // Це звичайний полігон
+				}
 				updateCanvas(w);
 			}
-		}
-	}
-	if (coonsSelected) {
+			else if (type == ObjectType::HermiteCubic) {
+				int size = w->getHermitePoints().size();
+				updateCanvas(w); //calls drawObject
 
-		if (e->button() == Qt::LeftButton) {
-			if (w->getObjectType() != ObjectType::None && !w->getDrawCurveActivated()) {
-				return;
+				ui->spinBoxIndex->setRange(1, size);
+				ui->spinBoxIndex->setValue(1);
 			}
-			if (!w->getDrawCurveActivated()) {
-				w->clearObject();
-				w->setDrawCurveActivated(true);
-				w->setObjectType(ObjectType::None);
+			else if (type == ObjectType::BezierCurve || type == ObjectType::CoonsBSpline) {
+				updateCanvas(w); 
 			}
-
-			w->addCurvePoint(e->pos());
-			w->setPixel(e->pos().x(), e->pos().y(), globalColor);
-			w->update();
-		}
-
-		else if (e->button() == Qt::RightButton) {
-			if (w->getCurvePoints().size() > 3) {
-				w->setDrawCurveActivated(false);
-				w->setObjectType(ObjectType::CoonsBSpline);
-				updateCanvas(w);
-			}
+			
 		}
 	}
 
@@ -363,19 +305,63 @@ void ImageViewer::on_actionExit_triggered()
 //Added for reseting active state (selecting another drawing option)
 void ImageViewer::on_toolButtonDrawLine_clicked()
 {
-	vW->setDrawLineActivated(false);
+	if (vW->getDrawState() == DrawState::Ready) {
+		vW->setObjectType(ObjectType::Line);
+	}
+	else {
+		qDebug() << "You need to clear object first";
+	}
+}
+void ImageViewer::on_toolButtonDrawPolygon_clicked()
+{
+	if (vW->getDrawState() == DrawState::Ready) {
+		vW->setObjectType(ObjectType::Polygon);
+	}
+	else {
+		qDebug() << "You need to clear object first";
+	}
 }
 void ImageViewer::on_toolButtonDrawCircle_clicked()
 {
-	vW->setDrawLineActivated(false);
+	if (vW->getDrawState() == DrawState::Ready) {
+		vW->setObjectType(ObjectType::Circle);
+	}
+	else {
+		qDebug() << "You need to clear object first";
+	}
+}
+void ImageViewer::on_toolButtonHermite_clicked()
+{
+	if (vW->getDrawState() == DrawState::Ready) {
+		vW->setObjectType(ObjectType::HermiteCubic);
+	}
+	else {
+		qDebug() << "You need to clear object first";
+	}
+}
+void ImageViewer::on_toolButtonBezier_clicked()
+{
+	if (vW->getDrawState() == DrawState::Ready) {
+		vW->setObjectType(ObjectType::BezierCurve);
+	}
+	else {
+		qDebug() << "You need to clear object first";
+	}
+}
+void ImageViewer::on_toolButtonCoonse_clicked()
+{
+	if (vW->getDrawState() == DrawState::Ready) {
+		vW->setObjectType(ObjectType::CoonsBSpline);
+	}
+	else {
+		qDebug() << "You need to clear object first";
+	}
 }
 
 void ImageViewer::on_pushButtonClearObject_clicked()
 {
 	vW->clearObject();
-	vW->setObjectType(ObjectType::None);
 	vW->update();
-	ui->gbTriangle->setEnabled(false);
 }
 void ImageViewer::on_pushButtonFill_clicked()
 {
