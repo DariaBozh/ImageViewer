@@ -139,7 +139,6 @@ void ImageViewer::ViewerWidgetMouseButtonPress(ViewerWidget* w, QEvent* event)
 		}
 	}
 	else if (e->button() == Qt::RightButton) {
-
 		if (state == DrawState::InProgress){
 			w->setDrawState(DrawState::Finished);
 

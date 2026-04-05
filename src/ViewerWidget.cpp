@@ -134,36 +134,39 @@ void ViewerWidget::drawLine(QPoint start, QPoint end, QColor color, int algType)
 	update();*/
 }
 void ViewerWidget::drawCircle(QPoint center, QPoint radiusLen, QColor color) //Сelociselny
-{ 
+{ //Bresenham's integer algorithm for a circle
 	if (!img || !data) return;
 
 	int radius = static_cast<int>(sqrt(pow(radiusLen.x() - center.x(), 2) + pow(radiusLen.y() - center.y(), 2)));
 
-	int p = 1 - radius;
-	int x = 0;
+	int p = 1 - radius; //error at the begining
+	int x = 0; //starting point
 	int y = radius;
-	int twoX = 3;
+
+	int twoX = 3; //change in error per X-step
 	int twoY = 2 * radius - 2;
 
 	int x0 = center.x();
 	int y0 = center.y();
 
-	while (x <= y) { // 45 stupnov
+	while (x <= y) { // 45 degress 8 times
 		setPixel(x0 + x,y0 + y, color);
 		setPixel(x0 + x, y0 - y, color);
 		setPixel(x0 - x, y0 + y, color);
 		setPixel(x0 - x, y0 - y, color);
-		setPixel(x0 + y, y0 + x, color);
+		setPixel(x0 + y, y0 + x, color); //reflected across the line y = x
 		setPixel(x0 + y, y0 - x, color);
 		setPixel(x0 - y, y0 + x, color);
 		setPixel(x0 - y, y0 - x, color);
 
+		// If the error is positive, the circle has “stretched too far” outward.
+		// We need to decrease Y (take a step diagonally inward)
 		if (p > 0) {
 			p -= twoY;
 			y--;
 			twoY -= 2;
 		}
-		p += twoX;
+		p += twoX; //increase x anyways
 		twoX += 2;
 		x++;
 	}
@@ -179,7 +182,7 @@ void ViewerWidget::drawPolygon(QVector<QPoint> points, QColor color, int algType
 	}
 
 	if (points.size() > 2) {
-		drawLine(points[points.size() - 1], points[0], color, algType); //abo last-first
+		drawLine(points[points.size() - 1], points[0], color, algType); //or last()-first()
 	}
 }
 
@@ -731,7 +734,7 @@ QVector<QPoint> ViewerWidget::clipLine(QPoint P1, QPoint P2)
 { //Cyrus-Beck algorithm
 	QVector<QPoint> newPoints;
 
-	double tLow = 0, tUpp = 1;
+	double tLow = 0, tUpp = 1; //Enter-exit point
 	QPoint d = P2 - P1; //Direction vector for P1P2 
 	QPoint borderPoints[4] = {QPoint(0,0), QPoint(0, getImgHeight()-1), QPoint(getImgWidth()-1, getImgHeight()-1), QPoint(getImgWidth()-1,0)};
 
@@ -747,12 +750,12 @@ QVector<QPoint> ViewerWidget::clipLine(QPoint P1, QPoint P2)
 		}
 
 		QPoint w = P1 - borderPoints[i]; //Direction vector from edge to begining of P1P2
-		QPoint n(vE, -uE);
+		QPoint n(vE, -uE); //Normal vector to edge
 		double dn = d.x() * n.x() + d.y() * n.y();
 		double wn = w.x() * n.x() + w.y() * n.y();
 
 		if (dn != 0) {
-			double t = -wn / dn;
+			double t = -wn / dn; //Intersection with the line containing the edge
 			if (dn > 0) { //The line is directed inward (всередину)
 				tLow = std::max(t, tLow);
 			}
@@ -782,10 +785,11 @@ QVector<QPoint> ViewerWidget::clipPolygon(const QVector<QPoint>& points)
 	if (points.isEmpty()) return points;
 	QVector<QPoint> results = points;
 
+	//Clipping borders
 	double xmins[4] = { 0, 0, -(double)(getImgWidth()-1), -(double)(getImgHeight() - 1) };
 
 	for (int i = 0; i < 4; i++) {
-		results = clipWithEdge(results, xmins[i]);
+		results = clipWithEdge(results, xmins[i]); //by 1 border, and then rotate
 		results = rotation(results, -90);
 	}
 
@@ -797,7 +801,7 @@ QVector<QPoint> ViewerWidget::clipWithEdge(const QVector<QPoint>& points, double
 	if (points.isEmpty()) return W; // Захист від порожнього масиву
 
 	QPoint S = points.last();
-
+	
 	for (int i = 0; i < points.size(); i++) {
 		QPoint V = points[i];
 		QPoint P;
@@ -805,7 +809,7 @@ QVector<QPoint> ViewerWidget::clipWithEdge(const QVector<QPoint>& points, double
 
 		if (V.x() >= xmin) {
 			if (S.x() >= xmin) {
-				W.append(V);
+				W.append(V); //Both inside : Add only V to the result.
 			}
 			else {
 				Py = S.y() + (xmin - S.x()) / (double)(V.x() - S.x()) * (V.y() - S.y());
@@ -814,6 +818,9 @@ QVector<QPoint> ViewerWidget::clipWithEdge(const QVector<QPoint>& points, double
 				W.append(P);
 				W.append(V);
 			}
+			// Go outside : Add only the intersection point P.
+			// Go inside : Add the intersection point P and point V.
+			// Both outside : Add nothing
 		}
 		else if (S.x() >= xmin) {
 			Py = S.y() + (xmin - S.x()) / (V.x() - S.x()) * (V.y() - S.y());
@@ -836,29 +843,29 @@ void ViewerWidget::clear()
 
 void ViewerWidget::drawLineDDA(QPoint start, QPoint end, QColor color)
 {
-	double x0 = start.x();
+	double x0 = start.x(); 
 	double y0 = start.y();
 	double x1 = end.x();
 	double y1 = end.y();
 
 	double dx = x1 - x0;
 	double dy = y1 - y0;
-	double steps = std::max(abs(dx), abs(dy));
+	double steps = std::max(abs(dx), abs(dy)); //Zoberme najvacsu cestu po x alebo y
 	double xInk, yInk;
 
 	if (steps != 0) { //double m = dy / dx;
-		xInk = dx / steps;
+		xInk = dx / steps; //nieco z toho urcite je 1
 		yInk = dy / steps;
 	}
 	else {
-		setPixel(x0, y0, color);
+		setPixel(x0, y0, color); 
 		return;
 	}
 
 	for (int i = 0; i < steps; i++) {
-		setPixel((int)(x0 + 0.5), (int)(y0 + 0.5), color);
-		//pripadne nieco z toho urcite je 1
-		x0 += xInk;
+		setPixel((int)(x0 + 0.5), (int)(y0 + 0.5), color); //zaokruhlujeme
+		
+		x0 += xInk;//nieco z toho urcite je 1
 		y0 += yInk;
 	}
 
@@ -881,21 +888,21 @@ void ViewerWidget::drawLineBresenham(QPoint start, QPoint end, QColor color)
 	int stepY = (y1 > y0) ? 1 : -1;
 
 	if (adx >= ady) { //hlavna je os x
-		k1 = 2 * ady;
-		k2 = k1 - 2 * adx;
-		p = k1 - adx;
+		k1 = 2 * ady; //nemenime y
+		k2 = k1 - 2 * adx; //robime krok po y
+		p = k1 - adx; //zaciatocna chyba
 
 		for (int i = 0; i <= adx; i++) {
 			setPixel(x0, y0, color);
 
-			if (p > 0) {
+			if (p > 0) { //nahromadila sa chyba – posunieme sa po vedlajsej osi Y
 				y0 += stepY;
-				p += k2;
+				p += k2; //korekcia
 			}
 			else {
-				p += k1;
+				p += k1; 
 			}
-			x0 += stepX;
+			x0 += stepX; //po hlavnej ideme vzdy
 		}
 	}
 	else if (ady > adx) { //hlavna je os y
