@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>708</width>
-    <height>754</height>
+    <width>903</width>
+    <height>880</height>
    </rect>
   </property>
   <property name="maximumSize">
@@ -31,8 +31,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>345</width>
-         <height>674</height>
+         <width>540</width>
+         <height>800</height>
         </rect>
        </property>
       </widget>
@@ -45,7 +45,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>708</width>
+     <width>903</width>
      <height>21</height>
     </rect>
    </property>
@@ -381,6 +381,32 @@
          <widget class="QLabel" name="label">
           <property name="text">
            <string>Choose your algorithm here</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item>
+      <widget class="QGroupBox" name="groupBox_5">
+       <property name="title">
+        <string>3D</string>
+       </property>
+       <layout class="QVBoxLayout" name="verticalLayout_3">
+        <item>
+         <widget class="QDoubleSpinBox" name="dsb_CubeSize"/>
+        </item>
+        <item>
+         <widget class="QPushButton" name="pbCubeSave">
+          <property name="text">
+           <string>Save to VTK</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_3">
+          <property name="text">
+           <string>Set size for cube and save it to VTK.</string>
           </property>
          </widget>
         </item>
