@@ -4,6 +4,7 @@
 #include <QtWidgets>
 #include "ui_ImageViewer.h"
 #include "ViewerWidget.h"
+#include "Object3D.h"
 
 class ImageViewer : public QMainWindow
 {
@@ -30,6 +31,8 @@ private:
 
 	QPoint lastMousePos;
 	bool isDragging = false;
+
+	Object3D* currentObject = nullptr; 
 
 	//Event filters
 	bool eventFilter(QObject* obj, QEvent* event);
@@ -84,6 +87,9 @@ private slots:
 	void on_toolButtonHermite_clicked();
 	void on_toolButtonBezier_clicked();
 	void on_toolButtonCoonse_clicked();
+
+	//3D
+	void on_pbCubeSave_clicked();
 
 	//Tools slots
 	void on_pushButtonSetColor_clicked();

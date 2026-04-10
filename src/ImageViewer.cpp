@@ -366,6 +366,22 @@ void ImageViewer::on_toolButtonCoonse_clicked()
 	vW->setObjectType(ObjectType::CoonsBSpline);
 }
 
+void ImageViewer::on_pbCubeSave_clicked()
+{
+	double size = ui->dsb_CubeSize->value();
+
+	if (currentObject) delete currentObject;
+	currentObject = new Object3D();
+
+	currentObject->generateCube(size);
+
+	QString filename = QFileDialog::getSaveFileName(this, "Save cube as VTK", "", "VTK Files (*.vtk)");
+	if (!filename.isEmpty()) {
+		currentObject->saveToVTK(filename);
+		statusBar()->showMessage("Cube saved to " + filename, 3000);
+	}
+}
+
 void ImageViewer::on_pushButtonClearObject_clicked()
 {
 	vW->clearObject();
