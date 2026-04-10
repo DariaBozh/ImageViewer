@@ -1,5 +1,6 @@
 #include "Object3D.h"
 #include <fstream>
+#include <sstream>
 #include <string>
 
 void Object3D::generateCube(double size)
@@ -171,8 +172,52 @@ void Object3D::saveToVTK(const QString& filename)
 }
 void Object3D::loadFromVTK(QString filename)
 {
-}
+	std::ifstream file(filename.toStdString());
+	if (!file.is_open()) return;
 
+	clear();
+
+	std::string line;
+	while (std::getline(file, line, '\n')) {
+		std::stringstream ss(line);
+		std::string word;
+		ss >> word; // first word
+
+		if (word == "POINTS") {
+			int count;
+			std::string type;
+			ss >> count >> type; //reads one by one
+
+			for (int i = 0; i < count; ++i) {
+				double x, y, z;
+				if (!(file >> x >> y >> z)) break;
+
+				Vertex* v = new Vertex;
+				v->id = i;
+				v->x = x;
+				v->y = y;
+				v->z = z;
+				vertices.push_back(v);
+			}
+		}
+
+		else if (word == "POLYGONS") {
+			int numPolygons, totalData;
+			ss >> numPolygons >> totalData;
+
+			for (int i = 0; i < numPolygons; ++i) {
+				int n, idx1, idx2, idx3;
+				file >> n >> idx1 >> idx2 >> idx3; // n is always 3
+
+				triangulateFace(idx1, idx2, idx3);
+			}
+		}
+	}
+
+	pairing();
+
+	file.close();
+}
 void Object3D::clear() {
 	for (auto v : vertices) delete v;
 	vertices.clear();

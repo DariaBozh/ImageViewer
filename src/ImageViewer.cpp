@@ -381,6 +381,23 @@ void ImageViewer::on_pbCubeSave_clicked()
 		statusBar()->showMessage("Cube saved to " + filename, 3000);
 	}
 }
+void ImageViewer::on_pbSphereSave_clicked()
+{
+	double parallels = ui->sbParallels->value();
+	double meridians = ui->sbMeridians->value();
+	double radius = ui->dsbRadius->value();
+
+	if (currentObject) delete currentObject;
+	currentObject = new Object3D();
+
+	currentObject->generateUVSphere(meridians, parallels, radius);
+
+	QString filename = QFileDialog::getSaveFileName(this, "Save sphere as VTK", "", "VTK Files (*.vtk)");
+	if (!filename.isEmpty()) {
+		currentObject->saveToVTK(filename);
+		statusBar()->showMessage("Sphere saved to " + filename, 3000);
+	}
+}
 
 void ImageViewer::on_pushButtonClearObject_clicked()
 {
