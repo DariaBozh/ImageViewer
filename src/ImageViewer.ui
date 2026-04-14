@@ -476,6 +476,13 @@
              </widget>
             </item>
             <item>
+             <widget class="QPushButton" name="pbOpenVTK">
+              <property name="text">
+               <string>Open VTK </string>
+              </property>
+             </widget>
+            </item>
+            <item>
              <spacer name="verticalSpacer_2">
               <property name="orientation">
                <enum>Qt::Orientation::Vertical</enum>

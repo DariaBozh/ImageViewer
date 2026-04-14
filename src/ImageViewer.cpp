@@ -23,6 +23,8 @@ ImageViewer::ImageViewer(QWidget* parent)
 	ui->spinBoxIndex->setEnabled(false);
 	ui->spinBoxAngle->setEnabled(false);
 	ui->dsbLength->setEnabled(false);
+
+	currentObject = new Object3D(); //In .h we only had nullptr
 }
 
 // Event filters
@@ -558,5 +560,21 @@ void ImageViewer::on_pushButtonSetColor_clicked()
 		QString style_sheet = QString("background-color: %1;").arg(newColor.name(QColor::HexRgb));
 		ui->pushButtonSetColor->setStyleSheet(style_sheet);
 		globalColor = newColor;
+	}
+}
+
+void ImageViewer::on_pbOpenVTK_clicked()
+{
+	QString fileName = QFileDialog::getOpenFileName(this, "Open VTK", "", "VTK files (*.vtk)");
+	if (fileName.isEmpty()) return;
+
+	currentObject->loadFromVTK(fileName);
+
+	// Check
+	if (!currentObject->getVertices().empty()) {
+		qDebug() << "Verification: ";
+		qDebug() << "Vertices count:" << currentObject->getVertices().size();
+		qDebug() << "Faces count:" << currentObject->getFaces().size();
+		// pairing() is also writing here
 	}
 }

@@ -42,6 +42,10 @@ public:
 	void saveToVTK(const QString& filename);
 	void loadFromVTK(QString filename);
 
+	QVector<Vertex*> getVertices() { return vertices ; }
+	QVector<H_edge*> getHalfEdges() { return halfEdges; }
+	QVector<Face*> getFaces() { return faces; };
+
 	void clear();
 };
 

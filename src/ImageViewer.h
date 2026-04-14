@@ -92,6 +92,9 @@ private slots:
 	void on_pbCubeSave_clicked();
 	void on_pbSphereSave_clicked();
 
+	void on_pbOpenVTK_clicked();
+
 	//Tools slots
 	void on_pushButtonSetColor_clicked();
+
 };

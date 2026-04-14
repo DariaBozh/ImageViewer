@@ -1,5 +1,6 @@
 #include "Object3D.h"
 #include <fstream>
+#include <iostream>
 #include <sstream>
 #include <string>
 
@@ -128,7 +129,6 @@ void Object3D::pairing()
 		}
 	}
 
-
 	int pairedCount = 0;
 	for (auto e : halfEdges) {
 		if (e->pair != nullptr) pairedCount++;
@@ -173,20 +173,20 @@ void Object3D::saveToVTK(const QString& filename)
 void Object3D::loadFromVTK(QString filename)
 {
 	std::ifstream file(filename.toStdString());
-	if (!file.is_open()) return;
+	if (!file.is_open()) {
+		throw std::runtime_error("Could not open file: " + filename.toStdString());
+	}
 
 	clear();
+	std::string word;
 
-	std::string line;
-	while (std::getline(file, line, '\n')) {
-		std::stringstream ss(line);
-		std::string word;
-		ss >> word; // first word
+	while (file >> word) {
+		if (word.empty()) continue;
 
 		if (word == "POINTS") {
 			int count;
 			std::string type;
-			ss >> count >> type; //reads one by one
+			file >> count >> type; //reads one by one
 
 			for (int i = 0; i < count; ++i) {
 				double x, y, z;
@@ -203,13 +203,17 @@ void Object3D::loadFromVTK(QString filename)
 
 		else if (word == "POLYGONS") {
 			int numPolygons, totalData;
-			ss >> numPolygons >> totalData;
+			file >> numPolygons >> totalData;
 
 			for (int i = 0; i < numPolygons; ++i) {
-				int n, idx1, idx2, idx3;
-				file >> n >> idx1 >> idx2 >> idx3; // n is always 3
-
-				triangulateFace(idx1, idx2, idx3);
+				int n, idx1, idx2, idx3; // n is 3 for triangle 
+				
+				if (file >> n >> idx1 >> idx2 >> idx3) {
+					if (idx1 >= vertices.size() || idx2 >= vertices.size() || idx3 >= vertices.size()) {
+						throw std::runtime_error("Corrupted VTK file: vertex index out of bounds");
+					}
+					triangulateFace(idx1, idx2, idx3);
+				}
 			}
 		}
 	}
