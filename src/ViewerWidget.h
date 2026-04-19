@@ -2,6 +2,7 @@
 #include <QtWidgets>
 #include <math.h>
 #include <algorithm>
+#include "Object3D.h"
 
 enum class ObjectType {
 	None, Line, Polygon, Triangle, Circle, HermiteCubic, BezierCurve, CoonsBSpline
@@ -11,19 +12,19 @@ enum class DrawState {
 	Ready, InProgress, Finished
 };
 
-struct TVertex { // For triangle
+struct TVertex { //for triangle
 	QPointF point;
 	QColor color;
 };
 
-struct Edge { // For filling
+struct Edge { //for filling
 	int yMin;
 	int yMax;
-	double x; // Intersection with the current line
+	double x; //intersection with the current line
 	double w; // w = 1/m
 };
 
-struct HermitePoint { // For curve
+struct HermitePoint {
 	QPointF pos;     
 	double angle;  
 	double length;  
@@ -33,8 +34,8 @@ class ViewerWidget :public QWidget {
 	Q_OBJECT
 private:
 	QSize areaSize = QSize(0, 0);
-	QImage* img = nullptr; //ma strukturu, v ktorom je smernik s baitami, reprezentujucimi pixeli; ulozene v 1D pole 
-	uchar* data = nullptr; //pre pristup
+	QImage* img = nullptr; //has a structure containing an index with bytes representing pixels; stored in a 1D array 
+	uchar* data = nullptr; //for access
 
 	QPoint drawLineBegin = QPoint(0, 0);
 
@@ -52,6 +53,9 @@ private:
 	TVertex v1, v2, v3; 
 	bool isTriangleFilled = false;
 	int currentInterType = 0;
+
+	Object3D object3D;
+	QVector3D u, v, n;
 	
 public:
 
@@ -103,7 +107,6 @@ public:
 	//Filling functions
 	void scanLine(const QVector<QPoint>& points, QColor color);
 	QVector<Edge> createEdgeTable(const QVector<QPoint>& points, int& yMin, int& yMax);
-
 	void fillTriangle(TVertex T0, TVertex T1, TVertex T2, int interType = 0);
 	void fillBaseTriangle(TVertex T0, TVertex T1, TVertex T2, TVertex orig0, TVertex orig1, TVertex orig2, int interType, bool excludeEnd = false);
 
@@ -116,7 +119,7 @@ public:
 	void drawObject(QColor color, int algType);
 	void clearObject();
 
-	//Transformation functions
+	//Transformations
 	QVector<QPoint> rotation(const QVector<QPoint>& points, double a, QPoint origin = QPoint(0,0));
 	QVector<QPoint> scale(const QVector<QPoint>& points, double dx, double dy);
 	QVector<QPoint> share(const QVector<QPoint>& points, double d);
@@ -129,7 +132,7 @@ public:
 
 	//Get/Set functions
 	uchar* getData() { return data; }
-	void setDataPtr() { data = img ? img->bits() : nullptr; } //zoberie data a ulozi do smernika
+	void setDataPtr() { data = img ? img->bits() : nullptr; } //takes the data and stores it in the pointer
 	int getImgWidth() { return img ? img->width() : 0; };
 	int getImgHeight() { return img ? img->height() : 0; };
 
@@ -140,6 +143,12 @@ public:
 	void drawLineBresenham(QPoint start, QPoint end, QColor color);
 	QColor getNearestNeighborColor(int x, int y, TVertex T0, TVertex T1, TVertex T2);
 	QColor getBarycentricColor(int x, int y, TVertex T0, TVertex T1, TVertex T2);
+
+	//Camera and 3D
+	void renderScene(QVector3D p);
+	QVector3D calculateCameraPosition(double theta, double phi, double rho); //to decart coords 
+	QVector3D transformToView(Vertex* v); //to camera coordinate system
+	QPoint projectTo2D(QVector3D p); 
 
 public slots:
 	void paintEvent(QPaintEvent* event) Q_DECL_OVERRIDE;

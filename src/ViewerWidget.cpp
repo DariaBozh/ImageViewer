@@ -200,6 +200,7 @@ void ViewerWidget::closePolygon(QColor color, int algType)
 	drawLine(endpoint, startpoint, color, algType);
 }
 
+//Curves
 void ViewerWidget::drawHermiteCubic(QVector<HermitePoint> controlPoints, QColor color)
 {
 	int n = controlPoints.size();
@@ -345,6 +346,48 @@ void ViewerWidget::setHermiteLength(int index, double length) {
 }
 
 //Filling functions
+QVector<Edge> ViewerWidget::createEdgeTable(const QVector<QPoint>& points, int& yMin, int& yMax)
+{
+	QVector<Edge> edgeTable;
+	int n = points.size();
+
+	yMin = points[0].y();
+	yMax = points[0].y();
+
+	for (int i = 0; i < n; i++) {
+		QPoint p1 = points[i];
+		if (p1.y() < yMin) yMin = p1.y();
+		if (p1.y() > yMax) yMax = p1.y();
+		QPoint p2 = points[(i + 1) % n];
+
+		if (p1.y() == p2.y()) continue;
+
+		Edge e;
+		if (p1.y() < p2.y()) {
+			e.yMin = p1.y();
+			e.yMax = p2.y();
+			e.yMax -= 1;
+			e.x = p1.x();
+		}
+		else {
+			e.yMin = p2.y();
+			e.yMax = p1.y();
+			e.yMax -= 1;
+			e.x = p2.x();
+		}
+
+		e.w = static_cast<double>(p2.x() - p1.x()) / (p2.y() - p1.y());
+
+		edgeTable.append(e);
+	}
+
+	std::sort(edgeTable.begin(), edgeTable.end(), [](const Edge& a, const Edge& b) {
+		if (a.yMin == b.yMin) return a.x < b.x;
+		return a.yMin < b.yMin; // sorting by yMin
+		});
+
+	return edgeTable;
+}
 void ViewerWidget::scanLine(const QVector<QPoint>& points, QColor color)
 {
 	int yMin, yMax;
@@ -401,49 +444,6 @@ void ViewerWidget::scanLine(const QVector<QPoint>& points, QColor color)
 	isFilled = true;
 	fillColor = color;
 }
-QVector<Edge> ViewerWidget::createEdgeTable(const QVector<QPoint>& points, int& yMin, int& yMax)
-{
-	QVector<Edge> edgeTable;
-	int n = points.size();
-
-	yMin = points[0].y();
-    yMax = points[0].y();
-
-	for (int i = 0; i < n; i++) {
-		QPoint p1 = points[i];
-		if (p1.y() < yMin) yMin = p1.y();
-		if (p1.y() > yMax) yMax = p1.y();
-		QPoint p2 = points[(i + 1) % n];
-
-		if (p1.y() == p2.y()) continue;
-
-		Edge e;
-		if (p1.y() < p2.y()) {
-			e.yMin = p1.y();
-			e.yMax = p2.y();
-			e.yMax -= 1;
-			e.x = p1.x(); 
-		}
-		else {
-			e.yMin = p2.y();
-			e.yMax = p1.y();
-			e.yMax -= 1;
-			e.x = p2.x();
-		}
-
-		e.w = static_cast<double>(p2.x() - p1.x()) / (p2.y() - p1.y());
-
-		edgeTable.append(e);
-	}
-
-	std::sort(edgeTable.begin(), edgeTable.end(), [](const Edge& a, const Edge& b) {
-		if (a.yMin == b.yMin) return a.x < b.x; 
-		return a.yMin < b.yMin; // sorting by yMin
-	});
-	
-	return edgeTable;
-}
-
 void ViewerWidget::fillTriangle(TVertex T0, TVertex T1, TVertex T2, int interType)
 {
 	v1 = T0;
@@ -619,6 +619,7 @@ void ViewerWidget::clearObject()
 	currentDrawState = DrawState::Ready;
 } 
 
+//Transformations
 QVector<QPoint> ViewerWidget::rotation(const QVector<QPoint>& points, double a, QPoint origin)
 {
 	if (points.isEmpty()) return points;
@@ -841,6 +842,7 @@ void ViewerWidget::clear()
 	update();
 }
 
+//Algorithms
 void ViewerWidget::drawLineDDA(QPoint start, QPoint end, QColor color)
 {
 	double x0 = start.x(); 
@@ -968,6 +970,29 @@ QColor ViewerWidget::getBarycentricColor(int x, int y, TVertex T0, TVertex T1, T
 
 	return QColor(r, g, b);
 }
+
+//Camera
+QVector3D ViewerWidget::calculateCameraPosition(double theta, double phi, double rho)
+{
+	QVector3D cameraPos;
+	double thetaRad = theta * M_PI / 180.0;
+	double phiRad = phi * M_PI / 180.0;
+
+	n.setX(sin(theta) * sin(phi));
+	n.setY(sin(theta) * cos(phi));
+	n.setZ(cos(theta));
+
+	u.setX(sin(theta + M_PI / 2.0) * sin(phi));
+	u.setY(sin(theta + M_PI / 2.0) * cos(phi));
+	u.setZ(cos(theta + M_PI / 2.0));
+
+	v = QVector3D::crossProduct(u, n);
+
+	cameraPos = n * rho;
+
+	return cameraPos;
+}
+
 
 //Slots
 void ViewerWidget::paintEvent(QPaintEvent* event)

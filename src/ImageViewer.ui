@@ -31,7 +31,7 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>397</width>
+         <width>334</width>
          <height>724</height>
         </rect>
        </property>
@@ -411,15 +411,22 @@
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_3">
             <item>
+             <widget class="QPushButton" name="pbOpenVTK">
+              <property name="text">
+               <string>Open VTK </string>
+              </property>
+             </widget>
+            </item>
+            <item>
              <widget class="QGroupBox" name="groupBox_6">
               <property name="title">
                <string>Cube</string>
               </property>
-              <layout class="QVBoxLayout" name="verticalLayout_6">
+              <layout class="QHBoxLayout" name="horizontalLayout_2">
                <item>
                 <widget class="QLabel" name="label_3">
                  <property name="text">
-                  <string>Enter the length of the cube's edge:</string>
+                  <string>Length of the cube's edge:</string>
                  </property>
                 </widget>
                </item>
@@ -441,31 +448,31 @@
               <property name="title">
                <string>Sphere</string>
               </property>
-              <layout class="QVBoxLayout" name="verticalLayout_7">
-               <item>
-                <widget class="QLabel" name="label_4">
-                 <property name="text">
-                  <string>Enter the number of parallels and meridians:</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QSpinBox" name="sbParallels"/>
-               </item>
-               <item>
-                <widget class="QSpinBox" name="sbMeridians"/>
-               </item>
-               <item>
+              <layout class="QGridLayout" name="gridLayout_5">
+               <item row="3" column="0">
                 <widget class="QLabel" name="label_5">
                  <property name="text">
-                  <string>Enter the radius of the sphere:</string>
+                  <string>Radius of the sphere:</string>
                  </property>
                 </widget>
                </item>
-               <item>
+               <item row="0" column="1">
+                <widget class="QSpinBox" name="sbParallels"/>
+               </item>
+               <item row="0" column="0">
+                <widget class="QLabel" name="label_4">
+                 <property name="text">
+                  <string>Number of parallels and meridians:</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="2">
+                <widget class="QSpinBox" name="sbMeridians"/>
+               </item>
+               <item row="3" column="1">
                 <widget class="QDoubleSpinBox" name="dsbRadius"/>
                </item>
-               <item>
+               <item row="3" column="2">
                 <widget class="QPushButton" name="pbSphereSave">
                  <property name="text">
                   <string>Save to VTK</string>
@@ -476,10 +483,59 @@
              </widget>
             </item>
             <item>
-             <widget class="QPushButton" name="pbOpenVTK">
-              <property name="text">
-               <string>Open VTK </string>
+             <widget class="QGroupBox" name="groupBox_8">
+              <property name="title">
+               <string>Projection</string>
               </property>
+              <layout class="QFormLayout" name="formLayout">
+               <item row="0" column="0" colspan="2">
+                <widget class="QComboBox" name="cbProjectionType">
+                 <item>
+                  <property name="text">
+                   <string>Ortogonal</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Perspective</string>
+                  </property>
+                 </item>
+                </widget>
+               </item>
+               <item row="1" column="0">
+                <widget class="QLabel" name="label_6">
+                 <property name="text">
+                  <string>Distance</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="1">
+                <widget class="QDoubleSpinBox" name="dsbDistance"/>
+               </item>
+               <item row="2" column="0" colspan="2">
+                <widget class="QSlider" name="horizontalSlider">
+                 <property name="maximum">
+                  <number>360</number>
+                 </property>
+                 <property name="orientation">
+                  <enum>Qt::Orientation::Horizontal</enum>
+                 </property>
+                </widget>
+               </item>
+               <item row="3" column="0" colspan="2">
+                <widget class="QSlider" name="horizontalSlider_2">
+                 <property name="minimum">
+                  <number>-180</number>
+                 </property>
+                 <property name="maximum">
+                  <number>180</number>
+                 </property>
+                 <property name="orientation">
+                  <enum>Qt::Orientation::Horizontal</enum>
+                 </property>
+                </widget>
+               </item>
+              </layout>
              </widget>
             </item>
             <item>
