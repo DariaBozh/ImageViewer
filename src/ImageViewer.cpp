@@ -270,7 +270,8 @@ void ImageViewer::render3D()
 	int projectionType = ui->cbProjectionType->currentIndex();
 	int representationType = ui->cbFillWireframe->isChecked() ? 1 : 0;
 
-	vW->draw3DObject(object3D, phi, theta, rho, projectionType, representationType);
+	if (!currentObject || currentObject->getVertices().empty()) return;
+	vW->draw3DObject(*currentObject, theta, phi, rho, projectionType, representationType);
 
 	vW->update();
 }
@@ -590,5 +591,6 @@ void ImageViewer::on_pbOpenVTK_clicked()
 		qDebug() << "Vertices count:" << currentObject->getVertices().size();
 		qDebug() << "Faces count:" << currentObject->getFaces().size();
 		// pairing() is also writing here
+		render3D();
 	}
 }

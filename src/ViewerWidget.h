@@ -54,7 +54,6 @@ private:
 	bool isTriangleFilled = false;
 	int currentInterType = 0;
 
-	Object3D object3D;
 
 public:
 
@@ -144,9 +143,8 @@ public:
 	QColor getBarycentricColor(int x, int y, TVertex T0, TVertex T1, TVertex T2);
 
 	//Camera and 3D
-	void draw3DObject(Object3D object, double theta, double phi, double rho, int alg_type, int represent_type);
-	QVector3D calculateCameraPosition(double theta, double phi, double rho); //to decart coords 
-	QVector3D transformToView(Vertex* V); //to camera coordinate system
+	void draw3DObject(const Object3D& object, double theta, double phi, double rho, int alg_type, int represent_type);
+	void zBuffer();
 
 public slots:
 	void paintEvent(QPaintEvent* event) Q_DECL_OVERRIDE;

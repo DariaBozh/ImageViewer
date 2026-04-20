@@ -972,27 +972,27 @@ QColor ViewerWidget::getBarycentricColor(int x, int y, TVertex T0, TVertex T1, T
 }
 
 //Camera
-void ViewerWidget::draw3DObject(Object3D object, double theta, double phi, double rho, int alg_type, int projection_type)
+void ViewerWidget::draw3DObject(const Object3D& object, double theta, double phi, double rho, int alg_type, int projection_type)
 {
 	if (object.getVertices().empty()) return;
 
 	//Transforming to view space (pohladova sur. sys.): coords of objects(s), camera position and orientation, projection
-	QVector3D u, v, n; //vectors, that are forming cameras coordinate system
+	QVector3D u, v, n; //forming cameras coordinate system
 	
 	double thetaRad = theta * M_PI / 180.0;
 	double phiRad = phi * M_PI / 180.0;
 	
-	//Normalized normal vector of the projection
+	//Normalized normal vector of the projection - depth(negative=in front of camera)
 	n.setX(sin(thetaRad) * sin(phiRad));
 	n.setY(sin(thetaRad) * cos(phiRad));
 	n.setZ(cos(thetaRad));
 
-	//Ortogonal to n, for cameras orientation
+	//Ortogonal to n, for cameras orientation - vertical
 	u.setX(sin(thetaRad + M_PI / 2) * sin(phiRad));
 	u.setY(sin(thetaRad + M_PI / 2) * cos(phiRad));
 	u.setZ(cos(thetaRad + M_PI / 2));
 
-	//Ortogonal to both
+	//Ortogonal to both - horizontal
 	v = QVector3D::crossProduct(u, n);
 	QVector3D cameraPos = n * rho;
 
@@ -1017,21 +1017,24 @@ void ViewerWidget::draw3DObject(Object3D object, double theta, double phi, doubl
 	double centerX = getImgWidth() / 2.0; 
 	double centerY = getImgHeight() / 2.0;
 
+	double scale = 20.0;
+	double f = 100.0;
 	for (const QVector3D& VP : viewSpacePoints) {
-		float projX, projY, projZ = 0;
+		float screenX, screenY, screenZ = 0;
 
 		if (projection_type == 0) { //orthogonal
-			projX = centerX + VP.x();
-			projY = centerY - VP.y();
-			projZ = 0;
-			projectedPoints.push_back(QPoint(qRound(projX), qRound(projY)));
+			screenX = centerX + VP.x() * scale;
+			screenY = centerY - VP.y() * scale;
+			projectedPoints.push_back(QPoint(qRound(screenX), qRound(screenY)));
 		}
 		else if (projection_type == 1) { //perspective
-			projX = centerX + (rho * VP.x()) / VP.z();
-			projY = centerY - (rho * VP.y()) / VP.z();
-			projZ = rho;
-			projectedPoints.push_back(QPoint(qRound(projX), qRound(projY)));
+			if (std::abs(VP.z()) < 0.001) continue;
+			screenX = centerX + (f * VP.x()) / (-VP.z());
+			screenY = centerY - (f * VP.y()) / (-VP.z());
+			projectedPoints.push_back(QPoint(qRound(screenX), qRound(screenY)));
 		}
+		//n points from the scene toward the camera, so newZ = (V - cameraPos) · n = -rho)
+		//this flips the x-axis
 	}
 
 	//Drawing
@@ -1045,11 +1048,27 @@ void ViewerWidget::draw3DObject(Object3D object, double theta, double phi, doubl
 		int id2 = e2->vert_origin->id;
 		int id3 = e3->vert_origin->id;
 
-		drawLineDDA(projectedPoints[id1], projectedPoints[id2], Qt::black);
-		drawLineDDA(projectedPoints[id2], projectedPoints[id3], Qt::black);
-		drawLineDDA(projectedPoints[id3], projectedPoints[id1], Qt::black);
+		auto drawEdge = [&](int a, int b) { // lambda func. for clipping before drawing
+			QVector<QPoint> clipped = clipLine(projectedPoints[a], projectedPoints[b]);
+			if (clipped.size() == 2)
+				drawLineDDA(clipped[0], clipped[1], Qt::black);
+		};
+		drawEdge(id1, id2);
+		drawEdge(id2, id3);
+		drawEdge(id3, id1);
 	}
 }
+
+//void ViewerWidget::zBuffer(const Object3D& object)
+//{
+//	int i = getImgWidth();
+//	int j = getImgHeight();
+//	QColor F[][] = new QColor[i][j];
+//	Z[][];
+//
+//	int size = object.
+//	for(int i = 0; i < )
+//}
 
 //Slots
 void ViewerWidget::paintEvent(QPaintEvent* event)
