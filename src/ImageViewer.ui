@@ -513,7 +513,7 @@
                 <widget class="QDoubleSpinBox" name="dsbDistance"/>
                </item>
                <item row="2" column="0" colspan="2">
-                <widget class="QSlider" name="horizontalSlider">
+                <widget class="QSlider" name="sliderThetaZenit">
                  <property name="maximum">
                   <number>360</number>
                  </property>
@@ -523,7 +523,7 @@
                 </widget>
                </item>
                <item row="3" column="0" colspan="2">
-                <widget class="QSlider" name="horizontalSlider_2">
+                <widget class="QSlider" name="sliderPhiAzimuth">
                  <property name="minimum">
                   <number>-180</number>
                  </property>
@@ -532,6 +532,13 @@
                  </property>
                  <property name="orientation">
                   <enum>Qt::Orientation::Horizontal</enum>
+                 </property>
+                </widget>
+               </item>
+               <item row="4" column="0">
+                <widget class="QCheckBox" name="cbFillWireframe">
+                 <property name="text">
+                  <string>Fill wireframe</string>
                  </property>
                 </widget>
                </item>

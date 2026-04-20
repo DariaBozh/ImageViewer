@@ -972,27 +972,84 @@ QColor ViewerWidget::getBarycentricColor(int x, int y, TVertex T0, TVertex T1, T
 }
 
 //Camera
-QVector3D ViewerWidget::calculateCameraPosition(double theta, double phi, double rho)
+void ViewerWidget::draw3DObject(Object3D object, double theta, double phi, double rho, int alg_type, int projection_type)
 {
-	QVector3D cameraPos;
+	if (object.getVertices().empty()) return;
+
+	//Transforming to view space (pohladova sur. sys.): coords of objects(s), camera position and orientation, projection
+	QVector3D u, v, n; //vectors, that are forming cameras coordinate system
+	
 	double thetaRad = theta * M_PI / 180.0;
 	double phiRad = phi * M_PI / 180.0;
+	
+	//Normalized normal vector of the projection
+	n.setX(sin(thetaRad) * sin(phiRad));
+	n.setY(sin(thetaRad) * cos(phiRad));
+	n.setZ(cos(thetaRad));
 
-	n.setX(sin(theta) * sin(phi));
-	n.setY(sin(theta) * cos(phi));
-	n.setZ(cos(theta));
+	//Ortogonal to n, for cameras orientation
+	u.setX(sin(thetaRad + M_PI / 2) * sin(phiRad));
+	u.setY(sin(thetaRad + M_PI / 2) * cos(phiRad));
+	u.setZ(cos(thetaRad + M_PI / 2));
 
-	u.setX(sin(theta + M_PI / 2.0) * sin(phi));
-	u.setY(sin(theta + M_PI / 2.0) * cos(phi));
-	u.setZ(cos(theta + M_PI / 2.0));
-
+	//Ortogonal to both
 	v = QVector3D::crossProduct(u, n);
+	QVector3D cameraPos = n * rho;
 
-	cameraPos = n * rho;
+	//Projecting onto the basis of the view coordinate system (dot prod.)
+	QVector<QVector3D> viewSpacePoints;
 
-	return cameraPos;
+	for (auto& V : object.getVertices()) {
+		//Distance between camera and point
+		double rx = V->x - cameraPos.x();
+		double ry = V->y - cameraPos.y();
+		double rz = V->z - cameraPos.z();
+
+		double newX = rx * v.x() + ry * v.y() + rz * v.z();
+		double newY = rx * u.x() + ry * u.y() + rz * u.z();
+		double newZ = rx * n.x() + ry * n.y() + rz * n.z();
+
+		viewSpacePoints.push_back(QVector3D(newX, newY, newZ));
+	}
+
+	//Projection to the plain
+	QVector<QPoint> projectedPoints;
+	double centerX = getImgWidth() / 2.0; 
+	double centerY = getImgHeight() / 2.0;
+
+	for (const QVector3D& VP : viewSpacePoints) {
+		float projX, projY, projZ = 0;
+
+		if (projection_type == 0) { //orthogonal
+			projX = centerX + VP.x();
+			projY = centerY - VP.y();
+			projZ = 0;
+			projectedPoints.push_back(QPoint(qRound(projX), qRound(projY)));
+		}
+		else if (projection_type == 1) { //perspective
+			projX = centerX + (rho * VP.x()) / VP.z();
+			projY = centerY - (rho * VP.y()) / VP.z();
+			projZ = rho;
+			projectedPoints.push_back(QPoint(qRound(projX), qRound(projY)));
+		}
+	}
+
+	//Drawing
+	for (auto& face : object.getFaces()) {
+		H_edge* e1 = face->edge;
+		H_edge* e2 = e1->edge_next;
+		H_edge* e3 = e2->edge_next;
+
+		//Getting vertices
+		int id1 = e1->vert_origin->id;
+		int id2 = e2->vert_origin->id;
+		int id3 = e3->vert_origin->id;
+
+		drawLineDDA(projectedPoints[id1], projectedPoints[id2], Qt::black);
+		drawLineDDA(projectedPoints[id2], projectedPoints[id3], Qt::black);
+		drawLineDDA(projectedPoints[id3], projectedPoints[id1], Qt::black);
+	}
 }
-
 
 //Slots
 void ViewerWidget::paintEvent(QPaintEvent* event)

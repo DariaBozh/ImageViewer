@@ -55,6 +55,9 @@ private:
 
 	void updateCanvas(ViewerWidget* w);
 
+	//3D
+	void render3D();
+
 private slots:
 	void on_actionOpen_triggered();
 	void on_actionSave_as_triggered();
@@ -93,6 +96,10 @@ private slots:
 	void on_pbSphereSave_clicked();
 
 	void on_pbOpenVTK_clicked();
+
+	void on_sliderThetaZenit_valueChanged(int value) { render3D(); };
+	void on_sliderPhiAzimuth_valueChanged(int value) { render3D(); };
+	void on_dsbDistance_valueChanged(double value) { render3D(); };
 
 	//Tools slots
 	void on_pushButtonSetColor_clicked();

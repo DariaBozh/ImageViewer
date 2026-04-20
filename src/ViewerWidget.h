@@ -55,8 +55,7 @@ private:
 	int currentInterType = 0;
 
 	Object3D object3D;
-	QVector3D u, v, n;
-	
+
 public:
 
 	ViewerWidget(QSize imgSize, QWidget* parent = Q_NULLPTR);
@@ -145,10 +144,9 @@ public:
 	QColor getBarycentricColor(int x, int y, TVertex T0, TVertex T1, TVertex T2);
 
 	//Camera and 3D
-	void renderScene(QVector3D p);
+	void draw3DObject(Object3D object, double theta, double phi, double rho, int alg_type, int represent_type);
 	QVector3D calculateCameraPosition(double theta, double phi, double rho); //to decart coords 
-	QVector3D transformToView(Vertex* v); //to camera coordinate system
-	QPoint projectTo2D(QVector3D p); 
+	QVector3D transformToView(Vertex* V); //to camera coordinate system
 
 public slots:
 	void paintEvent(QPaintEvent* event) Q_DECL_OVERRIDE;

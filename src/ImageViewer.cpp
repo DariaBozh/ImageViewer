@@ -261,6 +261,20 @@ void ImageViewer::updateCanvas(ViewerWidget* w)
 	w->update();
 }
 
+void ImageViewer::render3D()
+{
+	vW->clear();
+	double theta = ui->sliderThetaZenit->value();
+	double phi = ui->sliderPhiAzimuth->value();
+	double rho = ui->dsbDistance->value();
+	int projectionType = ui->cbProjectionType->currentIndex();
+	int representationType = ui->cbFillWireframe->isChecked() ? 1 : 0;
+
+	vW->draw3DObject(object3D, phi, theta, rho, projectionType, representationType);
+
+	vW->update();
+}
+
 //Slots
 void ImageViewer::on_actionOpen_triggered()
 {
