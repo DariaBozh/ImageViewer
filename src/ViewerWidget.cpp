@@ -972,8 +972,10 @@ QColor ViewerWidget::getBarycentricColor(int x, int y, TVertex T0, TVertex T1, T
 }
 
 //Camera
-void ViewerWidget::draw3DObject(const Object3D& object, double theta, double phi, double rho, int alg_type, int projection_type)
+void ViewerWidget::draw3DObject(const Object3D& object, double theta, double phi, double rho, int projection_type, int representation)
 {
+	qDebug() << "Projection type:" << projection_type << "\n";
+
 	if (object.getVertices().empty()) return;
 
 	//Transforming to view space (pohladova sur. sys.): coords of objects(s), camera position and orientation, projection
@@ -1014,23 +1016,34 @@ void ViewerWidget::draw3DObject(const Object3D& object, double theta, double phi
 
 	//Projection to the plain
 	QVector<QPoint> projectedPoints;
+	QVector<bool> isPointVisible;
+	isPointVisible.resize(viewSpacePoints.size());
 	double centerX = getImgWidth() / 2.0; 
 	double centerY = getImgHeight() / 2.0;
 
-	double scale = 20.0;
-	double f = 100.0;
-	for (const QVector3D& VP : viewSpacePoints) {
+	double scale = 20.0; //why not
+
+	for (int i = 0; i < viewSpacePoints.size(); i++) {
 		float screenX, screenY, screenZ = 0;
+		isPointVisible[i] = true;
+
+		const QVector3D& VP = viewSpacePoints[i];
 
 		if (projection_type == 0) { //orthogonal
 			screenX = centerX + VP.x() * scale;
 			screenY = centerY - VP.y() * scale;
+			//qDebug() << "screenX:" << screenX << "screenY:" << screenY;
 			projectedPoints.push_back(QPoint(qRound(screenX), qRound(screenY)));
 		}
 		else if (projection_type == 1) { //perspective
-			if (std::abs(VP.z()) < 0.001) continue;
-			screenX = centerX + (f * VP.x()) / (-VP.z());
-			screenY = centerY - (f * VP.y()) / (-VP.z());
+			if (-VP.z() < 0.1) {// points behind/at camera
+				isPointVisible[i] = false;
+				projectedPoints.push_back(QPoint(0,0));
+				continue;
+			} //or add else here below, dunno
+			const double d = 100; // focal length in pixels (FIXED, not rho)
+			screenX = centerX + d * VP.x() / (-VP.z());
+			screenY = centerY - d * VP.y() / (-VP.z());
 			projectedPoints.push_back(QPoint(qRound(screenX), qRound(screenY)));
 		}
 		//n points from the scene toward the camera, so newZ = (V - cameraPos) · n = -rho)
@@ -1053,9 +1066,12 @@ void ViewerWidget::draw3DObject(const Object3D& object, double theta, double phi
 			if (clipped.size() == 2)
 				drawLineDDA(clipped[0], clipped[1], Qt::black);
 		};
-		drawEdge(id1, id2);
-		drawEdge(id2, id3);
-		drawEdge(id3, id1);
+		if (!isPointVisible[id1] || !isPointVisible[id2]) continue;
+		else drawEdge(id1, id2);
+		if (!isPointVisible[id2] || !isPointVisible[id3]) continue;
+		else drawEdge(id2, id3);
+		if (!isPointVisible[id3] || !isPointVisible[id1]) continue;
+		else drawEdge(id3, id1);
 	}
 }
 

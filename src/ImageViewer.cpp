@@ -274,6 +274,10 @@ void ImageViewer::render3D()
 	vW->draw3DObject(*currentObject, theta, phi, rho, projectionType, representationType);
 
 	vW->update();
+
+	qDebug() << "render3D called: theta=" << ui->sliderThetaZenit->value()
+		<< "phi=" << ui->sliderPhiAzimuth->value()
+		<< "rho=" << ui->dsbDistance->value();
 }
 
 //Slots
@@ -446,6 +450,7 @@ void ImageViewer::on_pushButtonFill_clicked()
 	
 }
 
+//Transformations
 void ImageViewer::on_pushButtonRotate_clicked()
 {
 	if (vW->getTransformedPoints().isEmpty()) return;
@@ -577,7 +582,6 @@ void ImageViewer::on_pushButtonSetColor_clicked()
 		globalColor = newColor;
 	}
 }
-
 void ImageViewer::on_pbOpenVTK_clicked()
 {
 	QString fileName = QFileDialog::getOpenFileName(this, "Open VTK", "", "VTK files (*.vtk)");
