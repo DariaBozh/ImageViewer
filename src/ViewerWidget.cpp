@@ -1,4 +1,5 @@
 ﻿#include   "ViewerWidget.h"
+using namespace std;
 
 ViewerWidget::ViewerWidget(QSize imgSize, QWidget* parent)
 	: QWidget(parent)
@@ -976,8 +977,8 @@ void ViewerWidget::draw3DObject(const Object3D& object, double theta, double phi
 {
 	if (object.getVertices().empty()) return;
 	
-	//Transforming to view space (pohladova sur. sys.): coords of objects(s), camera position and orientation, projection
-	QVector3D u, v, n; //forming cameras coord. sys.
+	//View space (pohladova sur. sys.): coords of objects(s), camera position and orientation, projection
+	QVector3D u, v, n; //camera basis
 	double thetaRad = theta * M_PI / 180.0;
 	double phiRad = phi * M_PI / 180.0;
 	
@@ -1006,26 +1007,128 @@ void ViewerWidget::draw3DObject(const Object3D& object, double theta, double phi
 
 		double newX = rx * v.x() + ry * v.y() + rz * v.z();
 		double newY = rx * u.x() + ry * u.y() + rz * u.z();
-		double newZ = rx * n.x() + ry * n.y() + rz * n.z();
+		double newZ = rx * n.x() + ry * n.y() + rz * n.z(); //depth relative to the camera
 
 		viewSpacePoints.push_back(QVector3D(newX, newY, newZ));
 	}
 
-	//Rendering
-	for (auto& face : object.getFaces()) {
-		H_edge* startEdge = face->edge;
-		H_edge* e = startEdge;
-
-		do { //3 times for triangle
-			int id1 = e->vert_origin->id;
-			int id2 = e->edge_next->vert_origin->id;
-
-			//Giving function our 3D points ffrom viewSpacePoints
-			renderEdge(viewSpacePoints[id1], viewSpacePoints[id2], projection_type);
-
-			e = e->edge_next;
-		} while (e != startEdge); 
+	//Projection
+	QVector<QPoint> SP; // screen-space points, same index
+	for (const auto& p : viewSpacePoints) {
+		SP.push_back(projectPoint(p, projection_type));
 	}
+
+	//Wireframe/filled reprezentation
+	if (representation == 0) {
+		double near = (projection_type == 0) ? -1000.0 : (rho * 0.01); //1% of camera distance
+		
+		for (auto& face : object.getFaces()) {
+			H_edge* e = face->edge; //start edge
+
+			do { //3 times for triangle
+				int id1 = e->vert_origin->id;
+				int id2 = e->edge_next->vert_origin->id;
+
+				renderEdge(viewSpacePoints[id1], viewSpacePoints[id2], projection_type, near); //giving function our 3D points from viewSpacePoints
+
+				e = e->edge_next;
+			} while (e != face->edge);
+		}
+	}
+	else {
+		int W = getImgWidth(), H = getImgHeight();
+
+		QVector<QVector<double>> Z(W, QVector<double>(H, std::numeric_limits<double>::infinity()));
+
+		QVector<QColor> palette = { Qt::red, Qt::green, Qt::blue, Qt::cyan, Qt::magenta, Qt::yellow };
+		int faceIndex = 0;
+
+		for (auto* face : object.getFaces()) {
+			H_edge* e1 = face->edge;
+			H_edge* e2 = e1->edge_next;
+			H_edge* e3 = e2->edge_next;
+			int id1 = e1->vert_origin->id;
+			int id2 = e2->vert_origin->id;
+			int id3 = e3->vert_origin->id;
+
+			// depth = distance from camera (positive number)
+			double d1 = -viewSpacePoints[id1].z();
+			double d2 = -viewSpacePoints[id2].z();
+			double d3 = -viewSpacePoints[id3].z();
+
+			// Skip faces behind camera
+			if (d1 <= 0 && d2 <= 0 && d3 <= 0) continue;
+			
+			QColor faceColor = palette[(faceIndex / 2) % palette.size()]; //divide by 2 to fill 1 face fully
+			zBufferAlg(SP[id1], d1, SP[id2], d2, SP[id3], d3, faceColor, Z);
+			faceIndex++;
+		}
+	}
+
+	//Projection to the plain
+
+	//QVector<QPoint> projectedPoints;
+	//QVector<bool> isPointVisible;
+	//isPointVisible.resize(viewSpacePoints.size());
+	//double centerX = getImgWidth() / 2.0;
+	//double centerY = getImgHeight() / 2.0;
+
+	//double scale = 20.0; //why not
+
+	//for (int i = 0; i < viewSpacePoints.size(); i++) {
+	//	float screenX, screenY, screenZ = 0;
+	//	isPointVisible[i] = true;
+
+	//	const QVector3D& VP = viewSpacePoints[i];
+
+	//	if (projection_type == 0) { //orthogonal
+	//		screenX = centerX + VP.x() * scale;
+	//		screenY = centerY - VP.y() * scale;
+	//		//qDebug() << "screenX:" << screenX << "screenY:" << screenY;
+	//		projectedPoints.push_back(QPoint(qRound(screenX), qRound(screenY)));
+	//	}
+
+	//	else if (projection_type == 1) { //perspective
+	//		if (-VP.z() < 0.1) {// points behind/at camera
+	//			isPointVisible[i] = false;
+	//			projectedPoints.push_back(QPoint(0, 0));
+	//			continue;
+	//		} //or add else here below, dunno
+
+	//		const double d = 100; // focal length in pixels (FIXED, not rho)
+	//		screenX = centerX + d * VP.x() / (-VP.z());
+	//		screenY = centerY - d * VP.y() / (-VP.z());
+	//		projectedPoints.push_back(QPoint(qRound(screenX), qRound(screenY)));
+
+	//	}
+	//	//n points from the scene toward the camera, so newZ = (V - cameraPos) · n = -rho)
+	//	//this flips the x-axis
+	//}
+
+	////Drawing
+	//for (auto& face : object.getFaces()) {
+	//	H_edge* e1 = face->edge;
+	//	H_edge* e2 = e1->edge_next;
+	//	H_edge* e3 = e2->edge_next;
+
+	//	//Getting vertices
+	//	int id1 = e1->vert_origin->id;
+	//	int id2 = e2->vert_origin->id;
+	//	int id3 = e3->vert_origin->id;
+
+	//	auto drawEdge = [&](int a, int b) { // lambda func. for clipping before drawing
+	//		QVector<QPoint> clipped = clipLine(projectedPoints[a], projectedPoints[b]);
+	//		if (clipped.size() == 2)
+	//			drawLineDDA(clipped[0], clipped[1], Qt::black);
+	//	};
+
+	//	if (!isPointVisible[id1] || !isPointVisible[id2]) continue;
+	//	else drawEdge(id1, id2);
+	//	if (!isPointVisible[id2] || !isPointVisible[id3]) continue;
+	//	else drawEdge(id2, id3);
+	//	if (!isPointVisible[id3] || !isPointVisible[id1]) continue;
+	//	else drawEdge(id3, id1);
+	//}
 	
 }
 QPoint ViewerWidget::projectPoint(const QVector3D& V, int projection_type)
@@ -1052,20 +1155,22 @@ QPoint ViewerWidget::projectPoint(const QVector3D& V, int projection_type)
 
 	return projected;
 }
-void ViewerWidget::renderEdge(QVector3D P1, QVector3D P2, int projection_type)
+void ViewerWidget::renderEdge(QVector3D P1, QVector3D P2, int projection_type, double near)
 {	
-	//3D clipping (near plane z = -0.1)
-	if (P1.z() > -0.1 && P2.z() > -0.1) return; //behind the camera
+	//3D clipping (near plane)
+	double nearZ = -near; //e.g. -0.05 when rho = 5
 
-	if (P1.z() > -0.1 || P2.z() > -0.1) { //only partly
+	if (P1.z() > nearZ && P2.z() > nearZ) return; //behind the camera
+
+	if (P1.z() > nearZ || P2.z() > nearZ) { //only partly
 		double z1 = P1.z();
 		double z2 = P2.z();
-		if (z1 > -0.1) {
-			double t = (-0.1 - z1) / (z2 - z1);
+		if (z1 > nearZ) {
+			double t = (nearZ - z1) / (z2 - z1); //parameter for cutting point
 			P1 = P1 + t*(P2 - P1);
 		}
 		else {
-			double t = (-0.1 - z2) / (z1 - z2);
+			double t = (nearZ - z2) / (z1 - z2);
 			P2 = P2 + t * (P1 - P2);
 		}
 	}
@@ -1080,18 +1185,74 @@ void ViewerWidget::renderEdge(QVector3D P1, QVector3D P2, int projection_type)
 	if (clipped.size() == 2) {
 		drawLineDDA(clipped[0], clipped[1], Qt::black);
 	}
+
+	/*qDebug() << "P1.z=" << P1.z() << "P2.z=" << P2.z()
+		<< "nearZ=" << -near
+		<< "proj1=" << proj1 << "proj2=" << proj2;*/
 }
 
-//void ViewerWidget::zBuffer(const Object3D& object)
-//{
-//	int i = getImgWidth();
-//	int j = getImgHeight();
-//	QColor F[][] = new QColor[i][j];
-//	Z[][];
-//
-//	int size = object.
-//	for(int i = 0; i < )
-//}
+void ViewerWidget::zBufferAlg(QPoint p0, double d0, QPoint p1, double d1, QPoint p2, double d2,
+	QColor color, QVector<QVector<double>>& Z)
+{
+	// Sort by y (top to bottom)
+	if (p0.y() > p1.y()) { std::swap(p0, p1); std::swap(d0, d1); }
+	if (p1.y() > p2.y()) { std::swap(p1, p2); std::swap(d1, d2); }
+	if (p0.y() > p1.y()) { std::swap(p0, p1); std::swap(d0, d1); }
+	// now p0.y <= p1.y <= p2.y
+
+	// Rasterize using the same scanline approach as fillBaseTriangle,
+	// but interpolate depth at each pixel and test against zbuf
+	auto fillSpan = [&](int y, double xL, double xR, double dL, double dR) {
+		int xStart = qMax(0, (int)std::ceil(xL));
+		int xEnd = qMin(getImgWidth() - 1, (int)std::floor(xR));
+		if (xStart > xEnd || y < 0 || y >= getImgHeight()) return;
+
+		double spanLen = xR - xL;
+		for (int x = xStart; x <= xEnd; x++) {
+			// Linearly interpolate depth across the span
+			double t = (spanLen > 0) ? (x - xL) / spanLen : 0.0;
+			double depth = dL + t * (dR - dL);
+
+			// Z-test: paint only if this pixel is closer than what's stored
+			if (depth < Z[x][y]) {
+				Z[x][y] = depth;
+				setPixel(x, y, color);
+			}
+		}
+	};
+
+	// Triangle height
+	int totalH = p2.y() - p0.y();
+	if (totalH == 0) return;
+
+	// Top half: p0 -> p1 (left/right edge of triangle)
+	for (int y = p0.y(); y < p1.y(); y++) {
+		double t_long = (double)(y - p0.y()) / totalH;
+		double t_short = (double)(y - p0.y()) / qMax(1, p1.y() - p0.y());
+
+		double xL = p0.x() + t_long * (p2.x() - p0.x());
+		double xR = p0.x() + t_short * (p1.x() - p0.x());
+		double dL = d0 + t_long * (d2 - d0);
+		double dR = d0 + t_short * (d1 - d0);
+
+		if (xL > xR) { std::swap(xL, xR); std::swap(dL, dR); }
+		fillSpan(y, xL, xR, dL, dR);
+	}
+
+	// Bottom half: p1 -> p2
+	for (int y = p1.y(); y <= p2.y(); y++) {
+		double t_long = (double)(y - p0.y()) / totalH;
+		double t_short = (p2.y() == p1.y()) ? 1.0 : (double)(y - p1.y()) / (p2.y() - p1.y());
+
+		double xL = p0.x() + t_long * (p2.x() - p0.x());
+		double xR = p1.x() + t_short * (p2.x() - p1.x());
+		double dL = d0 + t_long * (d2 - d0);
+		double dR = d1 + t_short * (d2 - d1);
+
+		if (xL > xR) { std::swap(xL, xR); std::swap(dL, dR); }
+		fillSpan(y, xL, xR, dL, dR);
+	}
+}
 
 //Slots
 void ViewerWidget::paintEvent(QPaintEvent* event)

@@ -261,25 +261,6 @@ void ImageViewer::updateCanvas(ViewerWidget* w)
 	w->update();
 }
 
-void ImageViewer::render3D()
-{
-	vW->clear();
-	double theta = ui->sliderThetaZenit->value();
-	double phi = ui->sliderPhiAzimuth->value();
-	double rho = ui->dsbDistance->value();
-	int projectionType = ui->cbProjectionType->currentIndex();
-	int representationType = ui->cbFillWireframe->isChecked() ? 1 : 0;
-
-	if (!currentObject || currentObject->getVertices().empty()) return;
-	vW->draw3DObject(*currentObject, theta, phi, rho, projectionType, representationType);
-
-	vW->update();
-
-	qDebug() << "render3D called: theta=" << ui->sliderThetaZenit->value()
-		<< "phi=" << ui->sliderPhiAzimuth->value()
-		<< "rho=" << ui->dsbDistance->value();
-}
-
 //Slots
 void ImageViewer::on_actionOpen_triggered()
 {
@@ -385,39 +366,6 @@ void ImageViewer::on_toolButtonCoonse_clicked()
 		ui->gbTriangle->setEnabled(false);
 	}
 	vW->setObjectType(ObjectType::CoonsBSpline);
-}
-
-void ImageViewer::on_pbCubeSave_clicked()
-{
-	double size = ui->dsb_CubeSize->value();
-
-	if (currentObject) delete currentObject;
-	currentObject = new Object3D();
-
-	currentObject->generateCube(size);
-
-	QString filename = QFileDialog::getSaveFileName(this, "Save cube as VTK", "", "VTK Files (*.vtk)");
-	if (!filename.isEmpty()) {
-		currentObject->saveToVTK(filename);
-		statusBar()->showMessage("Cube saved to " + filename, 3000);
-	}
-}
-void ImageViewer::on_pbSphereSave_clicked()
-{
-	double parallels = ui->sbParallels->value();
-	double meridians = ui->sbMeridians->value();
-	double radius = ui->dsbRadius->value();
-
-	if (currentObject) delete currentObject;
-	currentObject = new Object3D();
-
-	currentObject->generateUVSphere(meridians, parallels, radius);
-
-	QString filename = QFileDialog::getSaveFileName(this, "Save sphere as VTK", "", "VTK Files (*.vtk)");
-	if (!filename.isEmpty()) {
-		currentObject->saveToVTK(filename);
-		statusBar()->showMessage("Sphere saved to " + filename, 3000);
-	}
 }
 
 void ImageViewer::on_pushButtonClearObject_clicked()
@@ -582,6 +530,28 @@ void ImageViewer::on_pushButtonSetColor_clicked()
 		globalColor = newColor;
 	}
 }
+
+//3D
+void ImageViewer::render3D()
+{
+	vW->clear();
+
+	double theta = ui->sliderThetaZenit->value();
+	double phi = ui->sliderPhiAzimuth->value();
+	double rho = ui->dsbDistance->value();
+	int projectionType = ui->cbProjectionType->currentIndex();
+	int representationType = ui->cbFillWireframe->isChecked() ? 1 : 0;
+
+	if (!currentObject || currentObject->getVertices().empty()) return;
+	vW->draw3DObject(*currentObject, theta, phi, rho, projectionType, representationType);
+
+	vW->update();
+
+	/*qDebug() << "render3D called: theta=" << ui->sliderThetaZenit->value()
+		<< "phi=" << ui->sliderPhiAzimuth->value()
+		<< "rho=" << ui->dsbDistance->value();*/
+}
+
 void ImageViewer::on_pbOpenVTK_clicked()
 {
 	QString fileName = QFileDialog::getOpenFileName(this, "Open VTK", "", "VTK files (*.vtk)");
@@ -596,5 +566,37 @@ void ImageViewer::on_pbOpenVTK_clicked()
 		qDebug() << "Faces count:" << currentObject->getFaces().size();
 		// pairing() is also writing here
 		render3D();
+	}
+}
+void ImageViewer::on_pbCubeSave_clicked()
+{
+	double size = ui->dsb_CubeSize->value();
+
+	if (currentObject) delete currentObject;
+	currentObject = new Object3D();
+
+	currentObject->generateCube(size);
+
+	QString filename = QFileDialog::getSaveFileName(this, "Save cube as VTK", "", "VTK Files (*.vtk)");
+	if (!filename.isEmpty()) {
+		currentObject->saveToVTK(filename);
+		statusBar()->showMessage("Cube saved to " + filename, 3000);
+	}
+}
+void ImageViewer::on_pbSphereSave_clicked()
+{
+	double parallels = ui->sbParallels->value();
+	double meridians = ui->sbMeridians->value();
+	double radius = ui->dsbRadius->value();
+
+	if (currentObject) delete currentObject;
+	currentObject = new Object3D();
+
+	currentObject->generateUVSphere(meridians, parallels, radius);
+
+	QString filename = QFileDialog::getSaveFileName(this, "Save sphere as VTK", "", "VTK Files (*.vtk)");
+	if (!filename.isEmpty()) {
+		currentObject->saveToVTK(filename);
+		statusBar()->showMessage("Sphere saved to " + filename, 3000);
 	}
 }
