@@ -144,6 +144,8 @@ public:
 
 	//Camera and 3D
 	void draw3DObject(const Object3D& object, double theta, double phi, double rho, int projection_type, int representation);
+	QPoint projectPoint(const QVector3D& V, int projection_type);
+	void renderEdge(QVector3D P1, QVector3D P2, int projection_type);
 	void zBuffer();
 
 public slots:
