@@ -31,6 +31,8 @@ struct HermitePoint {
 	double length;  
 };
 
+struct Triangle3D { QVector3D v1, v2, v3; };
+
 class ViewerWidget :public QWidget {
 	Q_OBJECT
 private:
@@ -54,9 +56,6 @@ private:
 	TVertex v1, v2, v3; 
 	bool isTriangleFilled = false;
 	int currentInterType = 0;
-
-	//3D object
-	//std::vector<std::vector<double>> zBuffer;
 
 public:
 
@@ -147,11 +146,12 @@ public:
 
 	//Camera and 3D
 	void draw3DObject(const Object3D& object, double theta, double phi, double rho, int projection_type, int representation);
+
 	QPoint projectPoint(const QVector3D& V, int projection_type);
-	void renderEdge(QVector3D P1, QVector3D P2, int projection_type, double near);
-	
-	void zBufferAlg(QPoint p0, double d0, QPoint p1, double d1, QPoint p2, double d2,
-		QColor color, QVector<QVector<double>>& zbuf);
+	void renderEdgeWireframe(QVector3D P1, QVector3D P2, int projection_type, double near);
+	QVector<Triangle3D> clipTriangleNear(QVector3D P1, QVector3D P2, QVector3D P3, double near);
+
+	void zBufferAlg(QPoint p0, double d0, QPoint p1, double d1, QPoint p2, double d2, QColor color, QVector<QVector<double>> &Z);
 
 public slots:
 	void paintEvent(QPaintEvent* event) Q_DECL_OVERRIDE;
