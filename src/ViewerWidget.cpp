@@ -973,7 +973,7 @@ QColor ViewerWidget::getBarycentricColor(int x, int y, TVertex T0, TVertex T1, T
 }
 
 //Camera
-void ViewerWidget::draw3DObject(const Object3D& object, double theta, double phi, double rho, int projection_type, int representation)
+void ViewerWidget::draw3DObject(const Object3D& object, double theta, double phi, double rho, int projection_type, int representation, int shadingType)
 {
 	if (object.getVertices().empty()) return;
 
@@ -1003,6 +1003,12 @@ void ViewerWidget::draw3DObject(const Object3D& object, double theta, double phi
 	QVector<QVector3D> viewSpacePoints;
 	QVector<QVector3D> viewSpaceNormals;
 
+	//Preparing normals for Gouraud shading
+	QMatrix4x4 rotationMatrix;
+	rotationMatrix.setToIdentity(); //jednotkova
+	rotationMatrix.rotate(phi, 0, 1, 0); //y
+	rotationMatrix.rotate(theta, 1, 0, 0); //x
+
 	for (auto& V : object.getVertices()) {
 		//Distance between camera and point, may use dotProduct method (?)
 		double rx = V->x - cameraPos.x(); //translation
@@ -1014,6 +1020,10 @@ void ViewerWidget::draw3DObject(const Object3D& object, double theta, double phi
 		double newZ = rx * n.x() + ry * n.y() + rz * n.z(); //depth relative to the camera
 
 		viewSpacePoints.push_back(QVector3D(newX, newY, newZ));
+
+		//Rotate original normals, so they fit the current object orientation
+		QVector3D rotatedNormal = rotationMatrix * V->N;
+		viewSpaceNormals[V->id] = rotatedNormal.normalized();
 	}
 
 	//Wireframe/filled reprezentation
@@ -1021,7 +1031,8 @@ void ViewerWidget::draw3DObject(const Object3D& object, double theta, double phi
 	
 	int H = getImgHeight();
 	int W = getImgWidth();
-	QVector<QVector<double>> Z(W, QVector<double>(H, -std::numeric_limits<double>::infinity()));
+	Z = QVector<QVector<double>>(W, QVector<double>(H, -std::numeric_limits<double>::infinity()));
+
 	QVector<QColor> palette = { Qt::red, Qt::green, Qt::blue, Qt::cyan, Qt::magenta, Qt::yellow };
 	int faceIndex = 0;
 
@@ -1058,22 +1069,33 @@ void ViewerWidget::draw3DObject(const Object3D& object, double theta, double phi
 				QPoint p3 = projectPoint(triangle.v3, projection_type);
 
 				//Drawing
-				QColor faceColor;
+				QVector<QColor> faceColors;
 				if (object.getType() == Object3DType::Sphere) {
-					//faceColor = QColor(200, 200, 200);
-					if (shadingType == Constant) {
-						QVector3D center = (triangle.v1 + triangle.v2 + triangle.v3) / 3.0;
-						faceColor = computeColor(center, triangle.n, globalLight, globalMaterial);
-					
-						zBufferAlg(p1, triangle.v1.z(), p2, triangle.v2.z(), p3, triangle.v3.z(), faceColor, Z);
-					}
-					else if (shadingType == Gourand) {
 
+					if (shadingType == 0) {
+						QVector3D center = (triangle.v1 + triangle.v2 + triangle.v3) / 3.0;
+						QColor faceColor = computeColor(center, triangle.n, globalLight, globalMaterial);
+						faceColors.append(faceColor);
+
+						//rasterizeTriangle();
+					}
+					else if (shadingType == 1) {
+						QVector3D n1 = viewSpaceNormals[e->vert_origin->id];
+						QVector3D n2 = viewSpaceNormals[e->edge_next->vert_origin->id];
+						QVector3D n3 = viewSpaceNormals[e->edge_next->edge_next->vert_origin->id];
+
+						QColor c1 = computeColor(triangle.v1, n1, globalLight, globalMaterial);
+						QColor c2 = computeColor(triangle.v2, n2, globalLight, globalMaterial);
+						QColor c3 = computeColor(triangle.v3, n3, globalLight, globalMaterial);
+
+						//rasterizeTriangle();
 					}
 				}
 				else {
-					faceColor = palette[(faceIndex / 2) % palette.size()]; //divide by 2 to fill 1 face fully
-					zBufferAlg(p1, triangle.v1.z(), p2, triangle.v2.z(), p3, triangle.v3.z(), faceColor, Z);
+					QColor faceColor = palette[(faceIndex / 2) % palette.size()]; //divide by 2 to fill 1 face fully
+					faceColors.append(faceColor);
+
+					//rasterizeTriangle();
 				}
 			}
 			faceIndex++;
@@ -1183,38 +1205,46 @@ QVector<Triangle3D> ViewerWidget::clipTriangleNear(QVector3D P1, QVector3D P2, Q
 
 	return result;
 }
-
-void ViewerWidget::zBufferAlg(QPoint p0, double d0, QPoint p1, double d1, QPoint p2, double d2, QColor color, QVector<QVector<double>>& Z)
+void ViewerWidget::rasterizeTriangle(const Triangle3D& triangle, const QVector<QColor>& vertexColors) //Universal function
 {
-	//Sort by y (top to bottom), so now p0.y <= p1.y <= p2.y
-	if (p0.y() > p1.y()) { std::swap(p0, p1); std::swap(d0, d1); }
-	if (p1.y() > p2.y()) { std::swap(p1, p2); std::swap(d1, d2); }
-	if (p0.y() > p1.y()) { std::swap(p0, p1); std::swap(d0, d1); }
+	//Scanline here
+	QPoint p1(triangle.v1.x(), triangle.v1.y());
+	QPoint p2(triangle.v2.x(), triangle.v2.y());
+	QPoint p3(triangle.v3.x(), triangle.v3.y());
 
-	int totalH = p2.y() - p0.y();
+	double d1 = triangle.v1.z();
+	double d2 = triangle.v2.z();
+	double d3 = triangle.v3.z();
+
+	//Sort by y (top to bottom), so now p0.y <= p1.y <= p2.y
+	if (p1.y() > p2.y()) { std::swap(p1, p2); std::swap(d1, d2); }
+	if (p2.y() > p3.y()) { std::swap(p2, p3); std::swap(d2, d3); }
+	if (p1.y() > p2.y()) { std::swap(p1, p2); std::swap(d1, d2); }
+
+	int totalH = p3.y() - p1.y();
 	if (totalH == 0) return; // Triange turned to line
 
 	int W = getImgWidth();
 	int H = getImgHeight();
 
 	//Drawing by horizontal lines (scanlines)
-	for (int y = p0.y(); y <= p2.y(); y++) {
+	for (int y = p1.y(); y <= p3.y(); y++) {
 		if (y < 0 || y >= H) continue; // Boundaries check
 
-		bool isSecondHalf = y > p1.y() || p1.y() == p0.y();
-		int segmentH = isSecondHalf ? p2.y() - p1.y() : p1.y() - p0.y();
+		bool isSecondHalf = y > p2.y() || p2.y() == p1.y();
+		int segmentH = isSecondHalf ? p3.y() - p2.y() : p2.y() - p1.y();
 		if (segmentH == 0) continue;
 
-		double t_long = (double)(y - p0.y()) / totalH;
-		double t_short = (double)(y - (isSecondHalf ? p1.y() : p0.y())) / segmentH;
+		double t_long = (double)(y - p1.y()) / totalH;
+		double t_short = (double)(y - (isSecondHalf ? p2.y() : p1.y())) / segmentH;
 
 		//Interpolation X
-		double xL = p0.x() + t_long * (p2.x() - p0.x());
-		double xR = isSecondHalf ? p1.x() + t_short * (p2.x() - p1.x()) : p0.x() + t_short * (p1.x() - p0.x());
+		double xL = p1.x() + t_long * (p3.x() - p1.x());
+		double xR = isSecondHalf ? p2.x() + t_short * (p3.x() - p2.x()) : p1.x() + t_short * (p2.x() - p1.x());
 
 		//Interpolation Z
-		double dL = d0 + t_long * (d2 - d0);
-		double dR = isSecondHalf ? d1 + t_short * (d2 - d1) : d0 + t_short * (d1 - d0);
+		double dL = d1 + t_long * (d3 - d1);
+		double dR = isSecondHalf ? d2 + t_short * (d3 - d2) : d1 + t_short * (d2 - d1);
 
 		if (xL > xR) { std::swap(xL, xR); std::swap(dL, dR); }
 
@@ -1222,20 +1252,63 @@ void ViewerWidget::zBufferAlg(QPoint p0, double d0, QPoint p1, double d1, QPoint
 		int xEnd = qMin(W - 1, (int)std::floor(xR));
 
 		double spanLen = xR - xL;
+
+		QColor color;
+		if (vertexColors.isEmpty()) {
+			cout << "You don't have any colors to interpolate!";
+			return;
+		}
 		
 		//"Pre každú plôšku nájdi pixely..."
-		//I don't use array F because it actually contains screen pixels, so setPixel is hypothetically suitable for this case
+	    //I don't use array F because it actually contains screen pixels, so setPixel is hypothetically suitable for this case
+
 		for (int x = xStart; x <= xEnd; x++) {
+			if (vertexColors.size() == 1) {
+				color = vertexColors[0];
+			}
+			else if (vertexColors.size() == 3) {
+				//Barysentric - rewrite
+				double ux = p2.x() - p1.x();
+				double uy = p2.y() - p1.y();
+				double vx = p3.x() - p1.x();
+				double vy = p3.y() - p1.y();
+
+				double nz = ux * vy - uy * vx;
+
+				double A = abs(nz) / 2.0;
+				if (A < 0.0001) color = vertexColors[0]; //if they are on 1 line
+				double A0 = abs((p2.x() - x) * (p3.y() - y) - (p2.y() - y) * (p3.x() - x)) / 2.0; //P-T1-T2
+				double A1 = abs((p1.x() - x) * (p3.y() - y) - (p1.y() - y) * (p3.x() - x)) / 2.0; //P-T0-T2
+
+				double l0 = A0 / A;
+				double l1 = A1 / A;
+				double l2 = 1.0 - l0 - l1;
+
+				int r = qBound(0, (int)(l0 * vertexColors[0].red() + l1 * vertexColors[1].red() + l2 * vertexColors[2].red()), 255);
+				int g = qBound(0, (int)(l0 * vertexColors[0].green() + l1 * vertexColors[1].green() + l2 * vertexColors[2].green()), 255);
+				int b = qBound(0, (int)(l0 * vertexColors[0].blue() + l1 * vertexColors[1].blue() + l2 * vertexColors[2].blue()), 255);
+				color = QColor(r, g, b);
+			}
+
 			// Interpolation Z between the left and right edges of the triangle
 			double t = (spanLen > 0) ? (x - xL) / spanLen : 0.0;
 			double depth = dL + t * (dR - dL);
 
-			// Z-test
-			if (Z[x][y] < depth) {
-				Z[x][y] = depth;
-				setPixel(x, y, color);
-			}
+			zBuffer(x, y, depth, color);
 		}
+	}
+
+}
+void ViewerWidget::zBuffer(int x, int y, int z, QColor& color)
+{
+	if (Z.empty() || Z.size() <= x || Z[0].size() <= y) {
+		setPixel(x, y, color);
+		return;
+	}
+
+	if (Z[x][y] < z) {
+		Z[x][y] = z;
+		setPixel(x, y, color); //Here is the exact color (already interpolated, if necessary)
 	}
 }
 
@@ -1271,6 +1344,9 @@ void ViewerWidget::computeFaceNormal(Triangle3D& triangle)
 	QVector3D edge2 = triangle.v3 - triangle.v1;
 
 	triangle.n = QVector3D::crossProduct(edge1, edge2).normalized();
+
+	//The points are already facing the camera at the correct angle, 
+	//then the result of their multiplication (normal) will automatically point in the right direction
 }
 
 //Slots

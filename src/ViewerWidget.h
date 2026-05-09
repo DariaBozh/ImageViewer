@@ -1,5 +1,6 @@
 #pragma once
 #include <QtWidgets>
+#include <iostream>
 #include <math.h>
 #include <algorithm>
 #include <limits>
@@ -75,6 +76,8 @@ private:
 	TVertex v1, v2, v3; 
 	bool isTriangleFilled = false;
 	int currentInterType = 0;
+
+	QVector<QVector<double>> Z;
 
 	LightSource globalLight; //заглушки, потім приберу і порішаю по параметрам функцій
 	Material globalMaterial;
@@ -167,13 +170,17 @@ public:
 	QColor getBarycentricColor(int x, int y, TVertex T0, TVertex T1, TVertex T2);
 
 	//Camera and 3D
-	void draw3DObject(const Object3D& object, double theta, double phi, double rho, int projection_type, int representation);
+	void draw3DObject(const Object3D& object, double theta, double phi, double rho, int projection_type, int representation, int shadingType);
+
+	void setLight(const LightSource& l) { globalLight = l; };
+	void setMaterial(const Material& m) { globalMaterial = m; };
 
 	QPoint projectPoint(const QVector3D& V, int projection_type);
 	void renderEdgeWireframe(QVector3D P1, QVector3D P2, int projection_type, double near);
 	QVector<Triangle3D> clipTriangleNear(QVector3D P1, QVector3D P2, QVector3D P3, double near);
+	void rasterizeTriangle(const Triangle3D& triangle, const QVector<QColor>& vertexColors);
 
-	void zBufferAlg(QPoint p0, double d0, QPoint p1, double d1, QPoint p2, double d2, QColor color, QVector<QVector<double>> &Z);
+	void zBuffer(int x, int y, int z, QColor& color);
 
 	QColor computeColor(const QVector3D& P, const QVector3D& N, const LightSource& light, const Material& mat);
 	void computeFaceNormal(Triangle3D& triangle);
