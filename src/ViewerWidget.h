@@ -5,6 +5,7 @@
 #include <limits>
 #include "Object3D.h"
 
+//2D
 enum class ObjectType {
 	None, Line, Polygon, Triangle, Circle, HermiteCubic, BezierCurve, CoonsBSpline
 };
@@ -31,7 +32,25 @@ struct HermitePoint {
 	double length;  
 };
 
-struct Triangle3D { QVector3D v1, v2, v3; };
+//3D
+struct Triangle3D { 
+	QVector3D v1, v2, v3; 
+	QVector3D n; //only for constant shading
+};
+
+struct LightSource { 
+	QVector3D position; 
+	QColor color;
+	double Il = 1; //light source intensity
+	double Io = 0.2; //scene light intensity
+};
+
+struct Material {
+	QVector3D rs; //reflection coefficient
+	QVector3D rd; //diffuse coefficient
+	QVector3D ra; //ambient coefficient
+	double h = 10.0; //mirror reflection coefficient
+};
 
 class ViewerWidget :public QWidget {
 	Q_OBJECT
@@ -56,6 +75,9 @@ private:
 	TVertex v1, v2, v3; 
 	bool isTriangleFilled = false;
 	int currentInterType = 0;
+
+	LightSource globalLight; //заглушки, потім приберу і порішаю по параметрам функцій
+	Material globalMaterial;
 
 public:
 
@@ -152,6 +174,9 @@ public:
 	QVector<Triangle3D> clipTriangleNear(QVector3D P1, QVector3D P2, QVector3D P3, double near);
 
 	void zBufferAlg(QPoint p0, double d0, QPoint p1, double d1, QPoint p2, double d2, QColor color, QVector<QVector<double>> &Z);
+
+	QColor computeColor(const QVector3D& P, const QVector3D& N, const LightSource& light, const Material& mat);
+	void computeFaceNormal(Triangle3D& triangle);
 
 public slots:
 	void paintEvent(QPaintEvent* event) Q_DECL_OVERRIDE;

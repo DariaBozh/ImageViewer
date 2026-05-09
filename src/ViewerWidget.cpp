@@ -977,8 +977,8 @@ void ViewerWidget::draw3DObject(const Object3D& object, double theta, double phi
 {
 	if (object.getVertices().empty()) return;
 
-	//View space (pohladova sur.sus.): 
-	//-coordinates of all objects; -camera position and orientation; -plane;
+	//View space (pohladova sur.sus.)
+	//We need: -coordinates of all objects; -camera position and orientation; -plane;
 
 	QVector3D u, v, n; //camera basis
 	double thetaRad = theta * M_PI / 180.0;
@@ -1001,6 +1001,7 @@ void ViewerWidget::draw3DObject(const Object3D& object, double theta, double phi
 
 	//Transforming (projecting onto the basis) to the view space
 	QVector<QVector3D> viewSpacePoints;
+	QVector<QVector3D> viewSpaceNormals;
 
 	for (auto& V : object.getVertices()) {
 		//Distance between camera and point, may use dotProduct method (?)
@@ -1046,6 +1047,9 @@ void ViewerWidget::draw3DObject(const Object3D& object, double theta, double phi
 
 			//3D near plain clipping
 			auto clippedTriangles = clipTriangleNear(v1, v2, v3, near);
+			for (int i = 0; i < clippedTriangles.size(); i++) {
+				computeFaceNormal(clippedTriangles[i]);
+			}
 			
 			for (const auto& triangle : clippedTriangles) {
 				//Projection of only visible/cropped parts
@@ -1054,13 +1058,29 @@ void ViewerWidget::draw3DObject(const Object3D& object, double theta, double phi
 				QPoint p3 = projectPoint(triangle.v3, projection_type);
 
 				//Drawing
-				QColor faceColor = palette[(faceIndex / 2) % palette.size()]; //divide by 2 to fill 1 face fully
-				zBufferAlg(p1, triangle.v1.z(), p2, triangle.v2.z(), p3, triangle.v3.z(), faceColor, Z);
+				QColor faceColor;
+				if (object.getType() == Object3DType::Sphere) {
+					//faceColor = QColor(200, 200, 200);
+					if (shadingType == Constant) {
+						QVector3D center = (triangle.v1 + triangle.v2 + triangle.v3) / 3.0;
+						faceColor = computeColor(center, triangle.n, globalLight, globalMaterial);
+					
+						zBufferAlg(p1, triangle.v1.z(), p2, triangle.v2.z(), p3, triangle.v3.z(), faceColor, Z);
+					}
+					else if (shadingType == Gourand) {
+
+					}
+				}
+				else {
+					faceColor = palette[(faceIndex / 2) % palette.size()]; //divide by 2 to fill 1 face fully
+					zBufferAlg(p1, triangle.v1.z(), p2, triangle.v2.z(), p3, triangle.v3.z(), faceColor, Z);
+				}
 			}
 			faceIndex++;
 		}
 	}
 }
+
 QPoint ViewerWidget::projectPoint(const QVector3D& V, int projection_type)
 {
 	double centerX = getImgWidth() / 2.0;
@@ -1217,6 +1237,40 @@ void ViewerWidget::zBufferAlg(QPoint p0, double d0, QPoint p1, double d1, QPoint
 			}
 		}
 	}
+}
+
+QColor ViewerWidget::computeColor(const QVector3D& P, const QVector3D& N, const LightSource& light, const Material& mat)
+{
+	//I decided to use view space for light source coords
+	//We need 4 unit vectors whose origin lies at point P:
+	
+	// N - normal, is in atribute
+	QVector3D L = (light.position - P).normalized(); //points to light source
+	QVector3D R = (2.0 * QVector3D::dotProduct(L, N) * N - L).normalized(); //the reflection of vector L
+	QVector3D V = (QVector3D(0, 0, 0) - P).normalized(); //points to camera (observer) which is at (0,0,0)
+	
+	QVector3D Is, Id, Ia, I;
+
+	Is = light.Il * mat.rs * pow(std::max(0.0, (double)QVector3D::dotProduct(V, R)), mat.h);
+	Id = light.Il * mat.rd * std::max(0.0, (double)QVector3D::dotProduct(L, N));
+	Ia = light.Io * mat.ra;
+
+	I = Ia + Id + Is; //Finale spectral composition (intensity)
+
+	//Trim values that are too large/small
+	int colorX = std::clamp((int)(I.x() * light.color.red()), 0, 255);
+	int colorY = std::clamp((int)(I.y() * light.color.green()), 0, 255);
+	int colorZ = std::clamp((int)(I.z() * light.color.blue()), 0, 255);
+	QColor color(colorX, colorY, colorZ);
+
+	return color;
+}
+void ViewerWidget::computeFaceNormal(Triangle3D& triangle)
+{
+	QVector3D edge1 = triangle.v2 - triangle.v1;
+	QVector3D edge2 = triangle.v3 - triangle.v1;
+
+	triangle.n = QVector3D::crossProduct(edge1, edge2).normalized();
 }
 
 //Slots

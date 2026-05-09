@@ -2,12 +2,18 @@
 #include <QtWidgets>
 #include <math.h>
 
+enum class Object3DType {
+	Generic, Cube, Sphere
+};
+
 struct H_edge; //I'll use half-edge representation
 
 struct Vertex {
 	double x, y, z;
 	H_edge* edge;
 	unsigned int id;
+
+	QVector3D N;
 };
 struct Face { //plocha (trojuholnik)
 	H_edge* edge;
@@ -25,6 +31,8 @@ private:
 	QVector<Vertex*> vertices;
 	QVector<H_edge*> halfEdges;
 	QVector<Face*> faces;
+
+	Object3DType type = Object3DType::Generic;
 
 public:
 	~Object3D() {
@@ -45,6 +53,9 @@ public:
 	QVector<Vertex*> getVertices() const { return vertices ; }
 	QVector<H_edge*> getHalfEdges() const { return halfEdges; }
 	QVector<Face*> getFaces() const { return faces; };
+
+	void setType(Object3DType newType) { type = newType; }
+	Object3DType getType() const { return type; }
 
 	void clear();
 };

@@ -57,6 +57,7 @@ void Object3D::generateUVSphere(int M, int P, double R) // M-meridians(vertices)
 			v->y = R * cos(currTheta);
 			v->z = R * sin(currTheta) * sin(currPhi);
 			v->id = idx;
+			v->N = QVector3D(v->x, v->y, v->z).normalized();
 
 			vertices.push_back(v);
 			idx++;
@@ -220,6 +221,15 @@ void Object3D::loadFromVTK(QString filename)
 
 	pairing();
 
+	if (halfEdges.size() == 36) {
+		type = Object3DType::Cube;
+		qDebug() << "It's a cube";
+	}
+	else if (halfEdges.size() > 36) {
+		type = Object3DType::Sphere;
+		qDebug() << "It's probably a sphere";
+	}
+
 	file.close();
 }
 void Object3D::clear() {
@@ -231,4 +241,6 @@ void Object3D::clear() {
 
 	for (auto f : faces) delete f;
 	faces.clear();
+
+	type = Object3DType::Generic;
 }
