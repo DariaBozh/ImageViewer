@@ -541,9 +541,36 @@ void ImageViewer::render3D()
 	double rho = ui->dsbDistance->value();
 	int projectionType = ui->cbProjectionType->currentIndex();
 	int representationType = ui->cbFillWireframe->isChecked() ? 1 : 0;
+	int shadingType = ui->rbShadingNearestNeighbour->isChecked() ? 0 : 1;
+
+	LightSource lightSource;
+	int r = ui->sbLightR->value();
+	int g = ui->sbLightG->value();
+	int b = ui->sbLightB->value();
+	lightSource.color = QColor(r, g, b);
+	int x = ui->sbLightX->value();
+	int y = ui->sbLightY->value();
+	int z = ui->sbLightZ->value();
+	lightSource.position = QVector3D(x, y, z);
+	vW->setLight(lightSource);
+
+	Material material;
+	int rsR = ui->dsbReflectionR->value();
+	int rsG = ui->dsbReflectionG->value();
+	int rsB = ui->dsbReflectionB->value();
+	material.rs = QVector3D(rsR, rsG, rsB);
+	int rdR = ui->dsbDifusionR->value();
+	int rdG = ui->dsbDifusionG->value();
+	int rdB = ui->dsbDifusionB->value();
+	material.rd = QVector3D(rdR, rdG, rdB);
+	int raR = ui->dsbAmbientR->value();
+	int raG = ui->dsbAmbientG->value();
+	int raB = ui->dsbAmbientB->value();
+	material.ra = QVector3D(raR, raG, raB);
+	vW->setMaterial(material);
 
 	if (!currentObject || currentObject->getVertices().empty()) return;
-	vW->draw3DObject(*currentObject, theta, phi, rho, projectionType, representationType);
+	vW->draw3DObject(*currentObject, theta, phi, rho, projectionType, representationType, shadingType);
 
 	vW->update();
 

@@ -169,6 +169,12 @@ void Object3D::saveToVTK(const QString& filename)
 			<< e3->vert_origin->id << "\n";
 	}
 
+	file << "\nPOINT_DATA " << vertices.size() << "\n";
+	file << "NORMALS normals float\n";
+	for (Vertex* v : vertices) {
+		file << v->N.x() << " " << v->N.y() << " " << v->N.z() << "\n";
+	}
+
 	file.close();
 }
 void Object3D::loadFromVTK(QString filename)
@@ -215,6 +221,21 @@ void Object3D::loadFromVTK(QString filename)
 					}
 					triangulateFace(idx1, idx2, idx3);
 				}
+			}
+		}
+
+		else if (word == "POINT_DATA") {
+			int count;
+			file >> count; // just consume the number, we already know vertex count
+		}
+		else if (word == "NORMALS") {
+			std::string name, dataType;
+			file >> name >> dataType; // e.g. normals float
+
+			for (int i = 0; i < (int)vertices.size(); ++i) {
+				double nx, ny, nz;
+				if (!(file >> nx >> ny >> nz)) break;
+				vertices[i]->N = QVector3D(nx, ny, nz); // already normalized
 			}
 		}
 	}

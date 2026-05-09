@@ -1002,12 +1002,7 @@ void ViewerWidget::draw3DObject(const Object3D& object, double theta, double phi
 	//Transforming (projecting onto the basis) to the view space
 	QVector<QVector3D> viewSpacePoints;
 	QVector<QVector3D> viewSpaceNormals;
-
-	//Preparing normals for Gouraud shading
-	QMatrix4x4 rotationMatrix;
-	rotationMatrix.setToIdentity(); //jednotkova
-	rotationMatrix.rotate(phi, 0, 1, 0); //y
-	rotationMatrix.rotate(theta, 1, 0, 0); //x
+	viewSpaceNormals.resize(object.getVertices().size());
 
 	for (auto& V : object.getVertices()) {
 		//Distance between camera and point, may use dotProduct method (?)
@@ -1022,8 +1017,10 @@ void ViewerWidget::draw3DObject(const Object3D& object, double theta, double phi
 		viewSpacePoints.push_back(QVector3D(newX, newY, newZ));
 
 		//Rotate original normals, so they fit the current object orientation
-		QVector3D rotatedNormal = rotationMatrix * V->N;
-		viewSpaceNormals[V->id] = rotatedNormal.normalized();
+		double nnX = V->N.x() * v.x() + V->N.y() * v.y() + V->N.z() * v.z();
+		double nnY = V->N.x() * u.x() + V->N.y() * u.y() + V->N.z() * u.z();
+		double nnZ = V->N.x() * n.x() + V->N.y() * n.y() + V->N.z() * n.z();
+		viewSpaceNormals[V->id] = QVector3D(nnX, nnY, nnZ).normalized();
 	}
 
 	//Wireframe/filled reprezentation
@@ -1069,15 +1066,13 @@ void ViewerWidget::draw3DObject(const Object3D& object, double theta, double phi
 				QPoint p3 = projectPoint(triangle.v3, projection_type);
 
 				//Drawing
-				QVector<QColor> faceColors;
 				if (object.getType() == Object3DType::Sphere) {
 
 					if (shadingType == 0) {
 						QVector3D center = (triangle.v1 + triangle.v2 + triangle.v3) / 3.0;
 						QColor faceColor = computeColor(center, triangle.n, globalLight, globalMaterial);
-						faceColors.append(faceColor);
 
-						//rasterizeTriangle();
+						rasterizeTriangle(p1, p2, p3, triangle.v1.z(), triangle.v2.z(), triangle.v3.z(), { faceColor });
 					}
 					else if (shadingType == 1) {
 						QVector3D n1 = viewSpaceNormals[e->vert_origin->id];
@@ -1088,18 +1083,48 @@ void ViewerWidget::draw3DObject(const Object3D& object, double theta, double phi
 						QColor c2 = computeColor(triangle.v2, n2, globalLight, globalMaterial);
 						QColor c3 = computeColor(triangle.v3, n3, globalLight, globalMaterial);
 
-						//rasterizeTriangle();
+						rasterizeTriangle(p1, p2, p3, triangle.v1.z(), triangle.v2.z(), triangle.v3.z(), { c1, c2, c3 });
 					}
 				}
 				else {
 					QColor faceColor = palette[(faceIndex / 2) % palette.size()]; //divide by 2 to fill 1 face fully
-					faceColors.append(faceColor);
-
-					//rasterizeTriangle();
+					
+					rasterizeTriangle(p1, p2, p3, triangle.v1.z(), triangle.v2.z(), triangle.v3.z(), { faceColor });
 				}
 			}
 			faceIndex++;
 		}
+	}
+}
+void ViewerWidget::renderEdgeWireframe(QVector3D P1, QVector3D P2, int projection_type, double near)
+{
+	//3D clipping (near plane)
+	double nearZ = -near; //e.g. -0.05 when rho = 5
+
+	if (P1.z() > nearZ && P2.z() > nearZ) return; //behind the camera
+
+	if (P1.z() > nearZ || P2.z() > nearZ) { //only partly
+		double z1 = P1.z();
+		double z2 = P2.z();
+		if (z1 > nearZ) {
+			double t = (nearZ - z1) / (z2 - z1); //parameter for cutting point
+			P1 = P1 + t * (P2 - P1);
+		}
+		else {
+			double t = (nearZ - z2) / (z1 - z2);
+			P2 = P2 + t * (P1 - P2);
+		}
+	}
+
+	//2D projection
+	QPoint proj1 = projectPoint(P1, projection_type);
+	QPoint proj2 = projectPoint(P2, projection_type);
+
+	QVector<QPoint> clipped = clipLine(proj1, proj2);//screen boundaries clipping (?)
+
+	//Drawing
+	if (clipped.size() == 2) {
+		drawLineDDA(clipped[0], clipped[1], Qt::black);
 	}
 }
 
@@ -1127,37 +1152,6 @@ QPoint ViewerWidget::projectPoint(const QVector3D& V, int projection_type)
 
 	return projected;
 }
-void ViewerWidget::renderEdgeWireframe(QVector3D P1, QVector3D P2, int projection_type, double near)
-{	
-	//3D clipping (near plane)
-	double nearZ = -near; //e.g. -0.05 when rho = 5
-
-	if (P1.z() > nearZ && P2.z() > nearZ) return; //behind the camera
-
-	if (P1.z() > nearZ || P2.z() > nearZ) { //only partly
-		double z1 = P1.z();
-		double z2 = P2.z();
-		if (z1 > nearZ) {
-			double t = (nearZ - z1) / (z2 - z1); //parameter for cutting point
-			P1 = P1 + t*(P2 - P1);
-		}
-		else {
-			double t = (nearZ - z2) / (z1 - z2);
-			P2 = P2 + t * (P1 - P2);
-		}
-	}
-
-	//2D projection
-	QPoint proj1 = projectPoint(P1, projection_type);
-	QPoint proj2 = projectPoint(P2, projection_type);
-
-	QVector<QPoint> clipped = clipLine(proj1, proj2);//screen boundaries clipping (?)
-
-	//Drawing
-	if (clipped.size() == 2) {
-		drawLineDDA(clipped[0], clipped[1], Qt::black);
-	}
-}
 QVector<Triangle3D> ViewerWidget::clipTriangleNear(QVector3D P1, QVector3D P2, QVector3D P3, double near)
 {
 	QVector<Triangle3D> result;
@@ -1171,11 +1165,6 @@ QVector<Triangle3D> ViewerWidget::clipTriangleNear(QVector3D P1, QVector3D P2, Q
 	for (int i = 0; i < 3; i++) {
 		inside[i] = (points[i].z() <= nearZ);
 		if (inside[i]) insideCount++;
-	}
-
-	//We may have 0, 1 or 2 triangles at the end
-	if (insideCount == 3) { //for 0 do nothing
-		result.append({ P1, P2, P3 });
 	}
 
 	//Sutherland-Hodgman simple version
@@ -1205,17 +1194,10 @@ QVector<Triangle3D> ViewerWidget::clipTriangleNear(QVector3D P1, QVector3D P2, Q
 
 	return result;
 }
-void ViewerWidget::rasterizeTriangle(const Triangle3D& triangle, const QVector<QColor>& vertexColors) //Universal function
+void ViewerWidget::rasterizeTriangle(QPoint p1, QPoint p2, QPoint p3, double d1, double d2, double d3, const QVector<QColor>& vertexColors) //Universal function
 {
 	//Scanline here
-	QPoint p1(triangle.v1.x(), triangle.v1.y());
-	QPoint p2(triangle.v2.x(), triangle.v2.y());
-	QPoint p3(triangle.v3.x(), triangle.v3.y());
-
-	double d1 = triangle.v1.z();
-	double d2 = triangle.v2.z();
-	double d3 = triangle.v3.z();
-
+	
 	//Sort by y (top to bottom), so now p0.y <= p1.y <= p2.y
 	if (p1.y() > p2.y()) { std::swap(p1, p2); std::swap(d1, d2); }
 	if (p2.y() > p3.y()) { std::swap(p2, p3); std::swap(d2, d3); }
@@ -1299,7 +1281,7 @@ void ViewerWidget::rasterizeTriangle(const Triangle3D& triangle, const QVector<Q
 	}
 
 }
-void ViewerWidget::zBuffer(int x, int y, int z, QColor& color)
+void ViewerWidget::zBuffer(int x, int y, double z, QColor& color)
 {
 	if (Z.empty() || Z.size() <= x || Z[0].size() <= y) {
 		setPixel(x, y, color);
@@ -1313,8 +1295,8 @@ void ViewerWidget::zBuffer(int x, int y, int z, QColor& color)
 }
 
 QColor ViewerWidget::computeColor(const QVector3D& P, const QVector3D& N, const LightSource& light, const Material& mat)
-{
-	//I decided to use view space for light source coords
+{  
+	//I decided to use view space for light source coords (Phong formula)
 	//We need 4 unit vectors whose origin lies at point P:
 	
 	// N - normal, is in atribute

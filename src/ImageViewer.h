@@ -100,6 +100,10 @@ private slots:
 	void on_sliderThetaZenit_valueChanged(int value) { render3D(); };
 	void on_sliderPhiAzimuth_valueChanged(int value) { render3D(); };
 	void on_dsbDistance_valueChanged(double value) { render3D(); };
+	void on_cbFillWireframe_stateChanged(int) { render3D(); }
+
+	void on_rbShadingNearestNeighbour() { render3D(); }  
+	void on_rbShadingGourand_clicked() { render3D(); }
 
 	//Tools slots
 	void on_pushButtonSetColor_clicked();

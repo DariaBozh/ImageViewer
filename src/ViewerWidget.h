@@ -169,18 +169,17 @@ public:
 	QColor getNearestNeighborColor(int x, int y, TVertex T0, TVertex T1, TVertex T2);
 	QColor getBarycentricColor(int x, int y, TVertex T0, TVertex T1, TVertex T2);
 
-	//Camera and 3D
-	void draw3DObject(const Object3D& object, double theta, double phi, double rho, int projection_type, int representation, int shadingType);
-
+	//Scene and 3D
 	void setLight(const LightSource& l) { globalLight = l; };
 	void setMaterial(const Material& m) { globalMaterial = m; };
 
-	QPoint projectPoint(const QVector3D& V, int projection_type);
+	void draw3DObject(const Object3D& object, double theta, double phi, double rho, int projection_type, int representation, int shadingType);
 	void renderEdgeWireframe(QVector3D P1, QVector3D P2, int projection_type, double near);
-	QVector<Triangle3D> clipTriangleNear(QVector3D P1, QVector3D P2, QVector3D P3, double near);
-	void rasterizeTriangle(const Triangle3D& triangle, const QVector<QColor>& vertexColors);
 
-	void zBuffer(int x, int y, int z, QColor& color);
+	QPoint projectPoint(const QVector3D& V, int projection_type);
+	QVector<Triangle3D> clipTriangleNear(QVector3D P1, QVector3D P2, QVector3D P3, double near);
+	void rasterizeTriangle(QPoint p1, QPoint p2, QPoint p3, double d1, double d2, double d3, const QVector<QColor>& vertexColors);
+	void zBuffer(int x, int y, double z, QColor& color);
 
 	QColor computeColor(const QVector3D& P, const QVector3D& N, const LightSource& light, const Material& mat);
 	void computeFaceNormal(Triangle3D& triangle);
