@@ -42,8 +42,8 @@ struct Triangle3D {
 struct LightSource { 
 	QVector3D position; 
 	QColor color;
-	double Il = 1; //light source intensity
-	double Io = 0.2; //scene light intensity
+	QVector3D Il; //light source intensity
+	QVector3D Io; //scene light intensity
 };
 
 struct Material {

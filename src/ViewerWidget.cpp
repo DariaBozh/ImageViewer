@@ -978,7 +978,9 @@ void ViewerWidget::draw3DObject(const Object3D& object, double theta, double phi
 	if (object.getVertices().empty()) return;
 
 	//View space (pohladova sur.sus.)
-	//We need: -coordinates of all objects; -camera position and orientation; -plane;
+	//We need: -coordinates of all objects; 
+	//         -camera position and orientation; 
+	//         -plane;
 
 	QVector3D u, v, n; //camera basis
 	double thetaRad = theta * M_PI / 180.0;
@@ -998,6 +1000,14 @@ void ViewerWidget::draw3DObject(const Object3D& object, double theta, double phi
 	v = QVector3D::crossProduct(u, n);
 
 	QVector3D cameraPos = n * rho;
+
+	//Transforming the light position to viewSpace
+	QVector3D l = globalLight.position - cameraPos;
+	LightSource viewSpaceLight = globalLight;
+	double lx = l.x()* v.x() + l.y() * v.y() + l.z() * v.z(); 
+	double ly = l.x()* u.x() + l.y() * u.y() + l.z() * u.z();
+	double lz = l.x()* n.x() + l.y() * n.y() + l.z() * n.z();
+	viewSpaceLight.position = QVector3D(lx, ly, lz);
 
 	//Transforming (projecting onto the basis) to the view space
 	QVector<QVector3D> viewSpacePoints;
@@ -1048,6 +1058,7 @@ void ViewerWidget::draw3DObject(const Object3D& object, double theta, double phi
 			} while (e != startEdge);
 		}
 		else if (representation == 1) { //Filled
+			//For every edges vertex
 			H_edge* e = face->edge;
 			QVector3D v1 = viewSpacePoints[e->vert_origin->id];
 			QVector3D v2 = viewSpacePoints[e->edge_next->vert_origin->id];
@@ -1068,13 +1079,13 @@ void ViewerWidget::draw3DObject(const Object3D& object, double theta, double phi
 				//Drawing
 				if (object.getType() == Object3DType::Sphere) {
 
-					if (shadingType == 0) {
+					if (shadingType == 0) { //Constant
 						QVector3D center = (triangle.v1 + triangle.v2 + triangle.v3) / 3.0;
 						QColor faceColor = computeColor(center, triangle.n, globalLight, globalMaterial);
 
 						rasterizeTriangle(p1, p2, p3, triangle.v1.z(), triangle.v2.z(), triangle.v3.z(), { faceColor });
 					}
-					else if (shadingType == 1) {
+					else if (shadingType == 1) { //Gourand
 						QVector3D n1 = viewSpaceNormals[e->vert_origin->id];
 						QVector3D n2 = viewSpaceNormals[e->edge_next->vert_origin->id];
 						QVector3D n3 = viewSpaceNormals[e->edge_next->edge_next->vert_origin->id];
@@ -1132,7 +1143,7 @@ QPoint ViewerWidget::projectPoint(const QVector3D& V, int projection_type)
 {
 	double centerX = getImgWidth() / 2.0;
 	double centerY = getImgHeight() / 2.0;
-	double scale = 20.0; //why not?
+	double scale = 1.0; //why not?
 	const double d = 100; //focal length in pixels (FIXED, not rho)
 
 	double screenX, screenY;
@@ -1306,16 +1317,16 @@ QColor ViewerWidget::computeColor(const QVector3D& P, const QVector3D& N, const 
 	
 	QVector3D Is, Id, Ia, I;
 
-	Is = light.Il * mat.rs * pow(std::max(0.0, (double)QVector3D::dotProduct(V, R)), mat.h);
+	Is = light.Il * mat.rs * pow(std::max(0.0, (double)QVector3D::dotProduct(V, R)), mat.h); //specular 
 	Id = light.Il * mat.rd * std::max(0.0, (double)QVector3D::dotProduct(L, N));
 	Ia = light.Io * mat.ra;
 
 	I = Ia + Id + Is; //Finale spectral composition (intensity)
 
 	//Trim values that are too large/small
-	int colorX = std::clamp((int)(I.x() * light.color.red()), 0, 255);
-	int colorY = std::clamp((int)(I.y() * light.color.green()), 0, 255);
-	int colorZ = std::clamp((int)(I.z() * light.color.blue()), 0, 255);
+	int colorX = std::clamp((int)(I.x() * 255.0), 0, 255);
+	int colorY = std::clamp((int)(I.y() * 255.0), 0, 255);
+	int colorZ = std::clamp((int)(I.z() * 255.0), 0, 255);
 	QColor color(colorX, colorY, colorZ);
 
 	return color;
@@ -1326,6 +1337,14 @@ void ViewerWidget::computeFaceNormal(Triangle3D& triangle)
 	QVector3D edge2 = triangle.v3 - triangle.v1;
 
 	triangle.n = QVector3D::crossProduct(edge1, edge2).normalized();
+
+	// In view space the camera is at origin, so (-center) points toward camera
+	// The outward normal should have a positive component in that direction
+
+	QVector3D center = (triangle.v1 + triangle.v2 + triangle.v3) / 3.0;
+	if (QVector3D::dotProduct(triangle.n, -center) < 0) {
+		triangle.n = -triangle.n;
+	}
 
 	//The points are already facing the camera at the correct angle, 
 	//then the result of their multiplication (normal) will automatically point in the right direction

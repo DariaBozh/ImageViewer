@@ -31,7 +31,7 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>919</width>
+         <width>913</width>
          <height>859</height>
         </rect>
        </property>
@@ -57,9 +57,12 @@
             </property>
             <layout class="QVBoxLayout" name="verticalLayout_6">
              <item>
-              <widget class="QRadioButton" name="rbShadingNearestNeighbour">
+              <widget class="QRadioButton" name="rbConstantShading">
                <property name="text">
-                <string>Nearest neighbour</string>
+                <string>Constant</string>
+               </property>
+               <property name="checked">
+                <bool>true</bool>
                </property>
               </widget>
              </item>
@@ -67,32 +70,6 @@
               <widget class="QRadioButton" name="rbShadingGourand">
                <property name="text">
                 <string>Gouraud</string>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </widget>
-          </item>
-          <item>
-           <widget class="QGroupBox" name="groupBox_16">
-            <property name="title">
-             <string/>
-            </property>
-            <layout class="QVBoxLayout" name="verticalLayout_13">
-             <item>
-              <widget class="QLabel" name="label_7">
-               <property name="text">
-                <string>Distance</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QDoubleSpinBox" name="dsbLightDistance">
-               <property name="maximum">
-                <double>800.000000000000000</double>
-               </property>
-               <property name="value">
-                <double>500.000000000000000</double>
                </property>
               </widget>
              </item>
@@ -129,7 +106,17 @@
               </widget>
              </item>
              <item>
-              <widget class="QSpinBox" name="sbLightX"/>
+              <widget class="QSpinBox" name="sbLightX">
+               <property name="minimum">
+                <number>-1000</number>
+               </property>
+               <property name="maximum">
+                <number>1000</number>
+               </property>
+               <property name="value">
+                <number>10</number>
+               </property>
+              </widget>
              </item>
              <item>
               <widget class="QLabel" name="label_12">
@@ -139,7 +126,17 @@
               </widget>
              </item>
              <item>
-              <widget class="QSpinBox" name="sbLightY"/>
+              <widget class="QSpinBox" name="sbLightY">
+               <property name="minimum">
+                <number>-1000</number>
+               </property>
+               <property name="maximum">
+                <number>1000</number>
+               </property>
+               <property name="value">
+                <number>10</number>
+               </property>
+              </widget>
              </item>
              <item>
               <widget class="QLabel" name="label_13">
@@ -149,7 +146,17 @@
               </widget>
              </item>
              <item>
-              <widget class="QSpinBox" name="sbLightZ"/>
+              <widget class="QSpinBox" name="sbLightZ">
+               <property name="minimum">
+                <number>-1000</number>
+               </property>
+               <property name="maximum">
+                <number>1000</number>
+               </property>
+               <property name="value">
+                <number>10</number>
+               </property>
+              </widget>
              </item>
             </layout>
            </widget>
@@ -219,7 +226,11 @@
               </widget>
              </item>
              <item>
-              <widget class="QSpinBox" name="sbAmbientR"/>
+              <widget class="QSpinBox" name="sbAmbientR">
+               <property name="maximum">
+                <number>255</number>
+               </property>
+              </widget>
              </item>
              <item>
               <widget class="QLabel" name="label_15">
@@ -229,7 +240,11 @@
               </widget>
              </item>
              <item>
-              <widget class="QSpinBox" name="sbAmbientG"/>
+              <widget class="QSpinBox" name="sbAmbientG">
+               <property name="maximum">
+                <number>255</number>
+               </property>
+              </widget>
              </item>
              <item>
               <widget class="QLabel" name="label_16">
@@ -239,7 +254,11 @@
               </widget>
              </item>
              <item>
-              <widget class="QSpinBox" name="sbAmbientB"/>
+              <widget class="QSpinBox" name="sbAmbientB">
+               <property name="maximum">
+                <number>255</number>
+               </property>
+              </widget>
              </item>
             </layout>
            </widget>
@@ -272,7 +291,14 @@
               </widget>
              </item>
              <item row="1" column="2">
-              <widget class="QDoubleSpinBox" name="dsbDifusionG"/>
+              <widget class="QDoubleSpinBox" name="dsbDifusionG">
+               <property name="maximum">
+                <double>1.000000000000000</double>
+               </property>
+               <property name="singleStep">
+                <double>0.050000000000000</double>
+               </property>
+              </widget>
              </item>
              <item row="3" column="0">
               <widget class="QLabel" name="label_22">
@@ -289,7 +315,14 @@
               </widget>
              </item>
              <item row="1" column="1">
-              <widget class="QDoubleSpinBox" name="dsbDifusionR"/>
+              <widget class="QDoubleSpinBox" name="dsbDifusionR">
+               <property name="maximum">
+                <double>1.000000000000000</double>
+               </property>
+               <property name="singleStep">
+                <double>0.050000000000000</double>
+               </property>
+              </widget>
              </item>
              <item row="0" column="1">
               <widget class="QLabel" name="label_17">
@@ -299,25 +332,74 @@
               </widget>
              </item>
              <item row="3" column="1">
-              <widget class="QDoubleSpinBox" name="dsbReflectionR"/>
+              <widget class="QDoubleSpinBox" name="dsbReflectionR">
+               <property name="maximum">
+                <double>1.000000000000000</double>
+               </property>
+               <property name="singleStep">
+                <double>0.050000000000000</double>
+               </property>
+              </widget>
              </item>
              <item row="4" column="1">
-              <widget class="QDoubleSpinBox" name="dsbAmbientR"/>
+              <widget class="QDoubleSpinBox" name="dsbAmbientR">
+               <property name="maximum">
+                <double>1.000000000000000</double>
+               </property>
+               <property name="singleStep">
+                <double>0.050000000000000</double>
+               </property>
+              </widget>
              </item>
              <item row="1" column="3">
-              <widget class="QDoubleSpinBox" name="dsbDifusionB"/>
+              <widget class="QDoubleSpinBox" name="dsbDifusionB">
+               <property name="maximum">
+                <double>1.000000000000000</double>
+               </property>
+               <property name="singleStep">
+                <double>0.050000000000000</double>
+               </property>
+              </widget>
              </item>
              <item row="3" column="2">
-              <widget class="QDoubleSpinBox" name="dsbReflectionG"/>
+              <widget class="QDoubleSpinBox" name="dsbReflectionG">
+               <property name="maximum">
+                <double>1.000000000000000</double>
+               </property>
+               <property name="singleStep">
+                <double>0.050000000000000</double>
+               </property>
+              </widget>
              </item>
              <item row="3" column="3">
-              <widget class="QDoubleSpinBox" name="dsbReflectionB"/>
+              <widget class="QDoubleSpinBox" name="dsbReflectionB">
+               <property name="maximum">
+                <double>1.000000000000000</double>
+               </property>
+               <property name="singleStep">
+                <double>0.050000000000000</double>
+               </property>
+              </widget>
              </item>
              <item row="4" column="2">
-              <widget class="QDoubleSpinBox" name="dsbAmbientG"/>
+              <widget class="QDoubleSpinBox" name="dsbAmbientG">
+               <property name="maximum">
+                <double>1.000000000000000</double>
+               </property>
+               <property name="singleStep">
+                <double>0.050000000000000</double>
+               </property>
+              </widget>
              </item>
              <item row="4" column="3">
-              <widget class="QDoubleSpinBox" name="dsbAmbientB"/>
+              <widget class="QDoubleSpinBox" name="dsbAmbientB">
+               <property name="maximum">
+                <double>1.000000000000000</double>
+               </property>
+               <property name="singleStep">
+                <double>0.050000000000000</double>
+               </property>
+              </widget>
              </item>
             </layout>
            </widget>
@@ -777,7 +859,11 @@
                 <widget class="QSpinBox" name="sbMeridians"/>
                </item>
                <item row="3" column="1">
-                <widget class="QDoubleSpinBox" name="dsbRadius"/>
+                <widget class="QDoubleSpinBox" name="dsbRadius">
+                 <property name="maximum">
+                  <double>500.000000000000000</double>
+                 </property>
+                </widget>
                </item>
                <item row="3" column="2">
                 <widget class="QPushButton" name="pbSphereSave">
@@ -812,7 +898,7 @@
                <item row="1" column="0">
                 <widget class="QLabel" name="label_6">
                  <property name="text">
-                  <string>Distance</string>
+                  <string>Camera distance</string>
                  </property>
                 </widget>
                </item>
