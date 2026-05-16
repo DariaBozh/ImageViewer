@@ -1064,42 +1064,57 @@ void ViewerWidget::draw3DObject(const Object3D& object, double theta, double phi
 			QVector3D v2 = viewSpacePoints[e->edge_next->vert_origin->id];
 			QVector3D v3 = viewSpacePoints[e->edge_next->edge_next->vert_origin->id];
 
+			int id1 = e->vert_origin->id;
+			int id2 = e->edge_next->vert_origin->id;
+			int id3 = e->edge_next->edge_next->vert_origin->id;
+
+			QVector3D origN1 = viewSpaceNormals[id1];
+			QVector3D origN2 = viewSpaceNormals[id2];
+			QVector3D origN3 = viewSpaceNormals[id3];
+
+			QVector3D origV1 = viewSpacePoints[id1];
+			QVector3D origV2 = viewSpacePoints[id2];
+			QVector3D origV3 = viewSpacePoints[id3];
+
 			//3D near plain clipping
 			auto clippedTriangles = clipTriangleNear(v1, v2, v3, near);
-			for (int i = 0; i < clippedTriangles.size(); i++) {
-				computeFaceNormal(clippedTriangles[i]);
-			}
-			
+			QVector3D faceN = (origN1 + origN2 + origN3).normalized(); // always outward for sphere
+			//if (faceN.z() <= 0.0) continue;
+
 			for (const auto& triangle : clippedTriangles) {
-				//Projection of only visible/cropped parts
 				QPoint p1 = projectPoint(triangle.v1, projection_type);
 				QPoint p2 = projectPoint(triangle.v2, projection_type);
 				QPoint p3 = projectPoint(triangle.v3, projection_type);
 
-				//Drawing
 				if (object.getType() == Object3DType::Sphere) {
 
 					if (shadingType == 0) { //Constant
-						QVector3D center = (triangle.v1 + triangle.v2 + triangle.v3) / 3.0;
-						QColor faceColor = computeColor(center, triangle.n, globalLight, globalMaterial);
+						// Geometric face normal from cross product (actual flat triangle orientation)
+						QVector3D edge1 = triangle.v2 - triangle.v1;
+						QVector3D edge2 = triangle.v3 - triangle.v1;
+						QVector3D geoN = QVector3D::crossProduct(edge1, edge2).normalized();
 
+						// Flip to correct outward direction using vertex normals as reference
+						if (QVector3D::dotProduct(geoN, faceN) < 0) geoN = -geoN;
+						QVector3D center = (triangle.v1 + triangle.v2 + triangle.v3) / 3.0;
+						QColor faceColor = computeColor(center, geoN, viewSpaceLight, globalMaterial);
 						rasterizeTriangle(p1, p2, p3, triangle.v1.z(), triangle.v2.z(), triangle.v3.z(), { faceColor });
 					}
-					else if (shadingType == 1) { //Gourand
-						QVector3D n1 = viewSpaceNormals[e->vert_origin->id];
-						QVector3D n2 = viewSpaceNormals[e->edge_next->vert_origin->id];
-						QVector3D n3 = viewSpaceNormals[e->edge_next->edge_next->vert_origin->id];
+					else if (shadingType == 1) { //Gouraud
+						// Using the original vertex normals directly
+						QVector3D n1 = origN1;
+						QVector3D n2 = origN2;
+						QVector3D n3 = origN3;
 
-						QColor c1 = computeColor(triangle.v1, n1, globalLight, globalMaterial);
-						QColor c2 = computeColor(triangle.v2, n2, globalLight, globalMaterial);
-						QColor c3 = computeColor(triangle.v3, n3, globalLight, globalMaterial);
+						QColor c1 = computeColor(triangle.v1, n1, viewSpaceLight, globalMaterial);
+						QColor c2 = computeColor(triangle.v2, n2, viewSpaceLight, globalMaterial);
+						QColor c3 = computeColor(triangle.v3, n3, viewSpaceLight, globalMaterial);
 
-						rasterizeTriangle(p1, p2, p3, triangle.v1.z(), triangle.v2.z(), triangle.v3.z(), { c1, c2, c3 });
+						rasterizeTriangle(p1, p2, p3, triangle.v1.z(), triangle.v2.z(), triangle.v3.z(), { c2, c3, c1 });
 					}
 				}
 				else {
-					QColor faceColor = palette[(faceIndex / 2) % palette.size()]; //divide by 2 to fill 1 face fully
-					
+					QColor faceColor = palette[(faceIndex / 2) % palette.size()];
 					rasterizeTriangle(p1, p2, p3, triangle.v1.z(), triangle.v2.z(), triangle.v3.z(), { faceColor });
 				}
 			}
@@ -1208,11 +1223,30 @@ QVector<Triangle3D> ViewerWidget::clipTriangleNear(QVector3D P1, QVector3D P2, Q
 void ViewerWidget::rasterizeTriangle(QPoint p1, QPoint p2, QPoint p3, double d1, double d2, double d3, const QVector<QColor>& vertexColors) //Universal function
 {
 	//Scanline here
-	
+	QVector<QColor> colors = vertexColors;
+
+	auto sortedSwap = [&](QPoint& a, QPoint& b, double& da, double& db) {
+		std::swap(a, b);
+		std::swap(da, db);
+		if (colors.size() == 3) {
+			std::swap(colors[0], colors[colors.indexOf(colors[0])]);
+		}
+
+	};
+
 	//Sort by y (top to bottom), so now p0.y <= p1.y <= p2.y
-	if (p1.y() > p2.y()) { std::swap(p1, p2); std::swap(d1, d2); }
-	if (p2.y() > p3.y()) { std::swap(p2, p3); std::swap(d2, d3); }
-	if (p1.y() > p2.y()) { std::swap(p1, p2); std::swap(d1, d2); }
+	if (p1.y() > p2.y()) {
+		std::swap(p1, p2); std::swap(d1, d2);
+		if (colors.size() == 3) std::swap(colors[0], colors[1]);
+	}
+	if (p2.y() > p3.y()) {
+		std::swap(p2, p3); std::swap(d2, d3);
+		if (colors.size() == 3) std::swap(colors[1], colors[2]);
+	}
+	if (p1.y() > p2.y()) {
+		std::swap(p1, p2); std::swap(d1, d2);
+		if (colors.size() == 3) std::swap(colors[0], colors[1]);
+	}
 
 	int totalH = p3.y() - p1.y();
 	if (totalH == 0) return; // Triange turned to line
@@ -1247,7 +1281,7 @@ void ViewerWidget::rasterizeTriangle(QPoint p1, QPoint p2, QPoint p3, double d1,
 		double spanLen = xR - xL;
 
 		QColor color;
-		if (vertexColors.isEmpty()) {
+		if (colors.isEmpty()) {
 			cout << "You don't have any colors to interpolate!";
 			return;
 		}
@@ -1256,10 +1290,10 @@ void ViewerWidget::rasterizeTriangle(QPoint p1, QPoint p2, QPoint p3, double d1,
 	    //I don't use array F because it actually contains screen pixels, so setPixel is hypothetically suitable for this case
 
 		for (int x = xStart; x <= xEnd; x++) {
-			if (vertexColors.size() == 1) {
-				color = vertexColors[0];
+			if (colors.size() == 1) {
+				color = colors[0];
 			}
-			else if (vertexColors.size() == 3) {
+			else if (colors.size() == 3) {
 				//Barysentric - rewrite
 				double ux = p2.x() - p1.x();
 				double uy = p2.y() - p1.y();
@@ -1269,7 +1303,7 @@ void ViewerWidget::rasterizeTriangle(QPoint p1, QPoint p2, QPoint p3, double d1,
 				double nz = ux * vy - uy * vx;
 
 				double A = abs(nz) / 2.0;
-				if (A < 0.0001) color = vertexColors[0]; //if they are on 1 line
+				if (A < 0.0001) color = colors[0]; //if they are on 1 line
 				double A0 = abs((p2.x() - x) * (p3.y() - y) - (p2.y() - y) * (p3.x() - x)) / 2.0; //P-T1-T2
 				double A1 = abs((p1.x() - x) * (p3.y() - y) - (p1.y() - y) * (p3.x() - x)) / 2.0; //P-T0-T2
 
@@ -1277,9 +1311,9 @@ void ViewerWidget::rasterizeTriangle(QPoint p1, QPoint p2, QPoint p3, double d1,
 				double l1 = A1 / A;
 				double l2 = 1.0 - l0 - l1;
 
-				int r = qBound(0, (int)(l0 * vertexColors[0].red() + l1 * vertexColors[1].red() + l2 * vertexColors[2].red()), 255);
-				int g = qBound(0, (int)(l0 * vertexColors[0].green() + l1 * vertexColors[1].green() + l2 * vertexColors[2].green()), 255);
-				int b = qBound(0, (int)(l0 * vertexColors[0].blue() + l1 * vertexColors[1].blue() + l2 * vertexColors[2].blue()), 255);
+				int r = qBound(0, (int)(l0 * colors[0].red() + l1 * colors[1].red() + l2 * colors[2].red()), 255);
+				int g = qBound(0, (int)(l0 * colors[0].green() + l1 * colors[1].green() + l2 * colors[2].green()), 255);
+				int b = qBound(0, (int)(l0 * colors[0].blue() + l1 * colors[1].blue() + l2 * colors[2].blue()), 255);
 				color = QColor(r, g, b);
 			}
 
@@ -1317,6 +1351,11 @@ QColor ViewerWidget::computeColor(const QVector3D& P, const QVector3D& N, const 
 	
 	QVector3D Is, Id, Ia, I;
 
+	/*double VR = QVector3D::dotProduct(V, R);
+	cout << "Dot product of V and R is: " << VR << endl;
+	double LN = QVector3D::dotProduct(L, N);
+	cout << "Dot product of L and N is: " << LN << endl;*/
+
 	Is = light.Il * mat.rs * pow(std::max(0.0, (double)QVector3D::dotProduct(V, R)), mat.h); //specular 
 	Id = light.Il * mat.rd * std::max(0.0, (double)QVector3D::dotProduct(L, N));
 	Ia = light.Io * mat.ra;
@@ -1330,24 +1369,6 @@ QColor ViewerWidget::computeColor(const QVector3D& P, const QVector3D& N, const 
 	QColor color(colorX, colorY, colorZ);
 
 	return color;
-}
-void ViewerWidget::computeFaceNormal(Triangle3D& triangle)
-{
-	QVector3D edge1 = triangle.v2 - triangle.v1;
-	QVector3D edge2 = triangle.v3 - triangle.v1;
-
-	triangle.n = QVector3D::crossProduct(edge1, edge2).normalized();
-
-	// In view space the camera is at origin, so (-center) points toward camera
-	// The outward normal should have a positive component in that direction
-
-	QVector3D center = (triangle.v1 + triangle.v2 + triangle.v3) / 3.0;
-	if (QVector3D::dotProduct(triangle.n, -center) < 0) {
-		triangle.n = -triangle.n;
-	}
-
-	//The points are already facing the camera at the correct angle, 
-	//then the result of their multiplication (normal) will automatically point in the right direction
 }
 
 //Slots

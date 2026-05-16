@@ -571,6 +571,7 @@ void ImageViewer::render3D()
 	double raG = ui->dsbAmbientG->value();
 	double raB = ui->dsbAmbientB->value();
 	material.ra = QVector3D(raR, raG, raB);
+	material.h = ui->sbShininess->value(); 
 	vW->setMaterial(material);
 
 	if (!currentObject || currentObject->getVertices().empty()) return;

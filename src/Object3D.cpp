@@ -57,7 +57,6 @@ void Object3D::generateUVSphere(int M, int P, double R) // M-meridians(vertices)
 			v->y = R * cos(currTheta);
 			v->z = R * sin(currTheta) * sin(currPhi);
 			v->id = idx;
-			v->N = QVector3D(v->x, v->y, v->z).normalized();
 
 			vertices.push_back(v);
 			idx++;
@@ -78,6 +77,7 @@ void Object3D::generateUVSphere(int M, int P, double R) // M-meridians(vertices)
 	}
 
 	pairing();
+	computeVertexNormals();
 }
 
 void Object3D::triangulateFace(int idx1, int idx2, int idx3)
@@ -169,12 +169,6 @@ void Object3D::saveToVTK(const QString& filename)
 			<< e3->vert_origin->id << "\n";
 	}
 
-	file << "\nPOINT_DATA " << vertices.size() << "\n";
-	file << "NORMALS normals float\n";
-	for (Vertex* v : vertices) {
-		file << v->N.x() << " " << v->N.y() << " " << v->N.z() << "\n";
-	}
-
 	file.close();
 }
 void Object3D::loadFromVTK(QString filename)
@@ -223,24 +217,10 @@ void Object3D::loadFromVTK(QString filename)
 				}
 			}
 		}
-
-		else if (word == "POINT_DATA") {
-			int count;
-			file >> count; // just consume the number, we already know vertex count
-		}
-		else if (word == "NORMALS") {
-			std::string name, dataType;
-			file >> name >> dataType; // e.g. normals float
-
-			for (int i = 0; i < (int)vertices.size(); ++i) {
-				double nx, ny, nz;
-				if (!(file >> nx >> ny >> nz)) break;
-				vertices[i]->N = QVector3D(nx, ny, nz); // already normalized
-			}
-		}
 	}
 
 	pairing();
+	computeVertexNormals();
 
 	if (halfEdges.size() == 36) {
 		type = Object3DType::Cube;
@@ -253,6 +233,42 @@ void Object3D::loadFromVTK(QString filename)
 
 	file.close();
 }
+void Object3D::computeVertexNormals()
+{
+	//Reset all normals to zero
+	for (Vertex* v : vertices) {
+		v->N = QVector3D(0, 0, 0);
+	}
+
+	//Compute face normal, add it to each of its 3 vertices
+	for (Face* f : faces) {
+		H_edge* e1 = f->edge;
+		H_edge* e2 = e1->edge_next;
+		H_edge* e3 = e2->edge_next;
+
+		Vertex* va = e1->vert_origin;
+		Vertex* vb = e2->vert_origin;
+		Vertex* vc = e3->vert_origin;
+
+		QVector3D A(va->x, va->y, va->z);
+		QVector3D B(vb->x, vb->y, vb->z);
+		QVector3D C(vc->x, vc->y, vc->z);
+
+		//Face normal weighted by area (cross product len. = 2*area)
+		QVector3D faceN = QVector3D::crossProduct(B - A, C - A);
+		//faceN is NOT normalized here; longer = bigger triangle = more weight
+
+		va->N += faceN;
+		vb->N += faceN;
+		vc->N += faceN;
+	}
+
+	//Normalize each vertex normal
+	for (Vertex* v : vertices) {
+		v->N = v->N.normalized();
+	}
+}
+
 void Object3D::clear() {
 	for (auto v : vertices) delete v;
 	vertices.clear();

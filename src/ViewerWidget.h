@@ -182,7 +182,6 @@ public:
 	void zBuffer(int x, int y, double z, QColor& color);
 
 	QColor computeColor(const QVector3D& P, const QVector3D& N, const LightSource& light, const Material& mat);
-	void computeFaceNormal(Triangle3D& triangle);
 
 public slots:
 	void paintEvent(QPaintEvent* event) Q_DECL_OVERRIDE;

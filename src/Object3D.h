@@ -50,6 +50,8 @@ public:
 	void saveToVTK(const QString& filename);
 	void loadFromVTK(QString filename);
 
+	void computeVertexNormals();
+
 	QVector<Vertex*> getVertices() const { return vertices ; }
 	QVector<H_edge*> getHalfEdges() const { return halfEdges; }
 	QVector<Face*> getFaces() const { return faces; };

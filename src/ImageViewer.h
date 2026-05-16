@@ -102,7 +102,7 @@ private slots:
 	void on_dsbDistance_valueChanged(double value) { render3D(); };
 	void on_cbFillWireframe_stateChanged(int value) { render3D(); }
 
-	void on_rbrbConstantShading_clicked() { render3D(); }
+	void on_rbConstantShading_clicked() { render3D(); }
 	void on_rbShadingGourand_clicked() { render3D(); }
 
 	void on_tbRender_clicked(){  render3D(); }
