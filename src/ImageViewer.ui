@@ -938,7 +938,7 @@
                <item row="1" column="0">
                 <widget class="QLabel" name="label_6">
                  <property name="text">
-                  <string>Camera distance</string>
+                  <string>Camera distance (from the object center):</string>
                  </property>
                 </widget>
                </item>

@@ -998,7 +998,7 @@ void ViewerWidget::draw3DObject(const Object3D& object, double theta, double phi
 	u.setZ(cos(thetaRad + M_PI / 2));
 
 	//Ortogonal to both - horizontal
-	v = QVector3D::crossProduct(u, n);
+	v = QVector3D::crossProduct(n, u); //Changed from left-handed to right-handed
 
 	QVector3D cameraPos = n * rho;
 
@@ -1347,13 +1347,16 @@ void ViewerWidget::zBuffer(int x, int y, double z, QColor& color)
 
 QColor ViewerWidget::computeColor(const QVector3D& P, const QVector3D& N, const LightSource& light, const Material& mat)
 {  
-	//I decided to use view space for light source coords (Phong formula)
+	//I decided to use view space for computing THOSE VECTORS BELOW (Phong formula)
 	//We need 4 unit vectors whose origin lies at point P:
 	
 	// N - normal, is in atribute
 	QVector3D L = (light.position - P).normalized(); //points to light source
 	QVector3D R = (2.0 * QVector3D::dotProduct(L, N) * N - L).normalized(); //the reflection of vector L
-	QVector3D V = (QVector3D(0, 0, 0) - P).normalized(); //points to camera (observer) which is at (0,0,0)
+	QVector3D V = (QVector3D(0, 0, 1));
+
+	//For perspective:
+	//QVector3D V = (QVector3D(0, 0, 0) - P).normalized(); //points to camera (observer) which is at (0,0,0)
 	
 	QVector3D Is, Id, Ia, I;
 

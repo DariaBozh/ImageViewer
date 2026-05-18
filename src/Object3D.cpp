@@ -263,7 +263,8 @@ void Object3D::loadFromVTK(QString filename)
 	file.close();
 }
 void Object3D::computeVertexNormals()
-{
+{	//1 normal for triangle face! 
+
 	//Reset all normals to zero
 	for (Vertex* v : vertices) {
 		v->N = QVector3D(0, 0, 0);
@@ -284,7 +285,7 @@ void Object3D::computeVertexNormals()
 		QVector3D C(vc->x, vc->y, vc->z);
 
 		//Face normal weighted by area (cross product len. = 2*area)
-		QVector3D faceN = QVector3D::crossProduct(B - A, C - A);
+		QVector3D faceN = QVector3D::crossProduct(C - A, B - A);
 		//faceN is NOT normalized here; longer = bigger triangle = more weight
 
 		va->N += faceN;
