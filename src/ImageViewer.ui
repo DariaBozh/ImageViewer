@@ -878,7 +878,11 @@
                 </widget>
                </item>
                <item row="0" column="1">
-                <widget class="QSpinBox" name="sbParallels"/>
+                <widget class="QSpinBox" name="sbParallels">
+                 <property name="maximum">
+                  <number>500</number>
+                 </property>
+                </widget>
                </item>
                <item row="0" column="0">
                 <widget class="QLabel" name="label_4">
@@ -888,7 +892,11 @@
                 </widget>
                </item>
                <item row="0" column="2">
-                <widget class="QSpinBox" name="sbMeridians"/>
+                <widget class="QSpinBox" name="sbMeridians">
+                 <property name="maximum">
+                  <number>500</number>
+                 </property>
+                </widget>
                </item>
                <item row="3" column="1">
                 <widget class="QDoubleSpinBox" name="dsbRadius">

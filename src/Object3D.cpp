@@ -35,20 +35,26 @@ void Object3D::generateCube(double size)
 		triangulateFace(triangleVert[i][0], triangleVert[i][1], triangleVert[i][2]);
 	}
 
-	pairing();
+	//pairing();
 
 }
 void Object3D::generateUVSphere(int M, int P, double R) // M-meridians(vertices), P-parallels(circles), R-radius
 {
 	clear();
 
-	double theta = M_PI / P;
+	double theta = M_PI / (P + 1); //P=5 -> 6 oblasti medzi nimi a polami (poly neberieme do P)
 	double phi = 2 * M_PI / M;
 	int idx = 0;
 
 	// Creating verticies
-	for (int j = 0; j <= P; j++) { //parallels, for theta
-		for (int i = 0; i <= M; i++) { //meridians, for phi
+	Vertex* northPole = new Vertex();
+	northPole->x = 0; northPole->y = R; northPole->z = 0;
+	northPole->id = idx;
+	vertices.push_back(northPole);
+	idx++;
+
+	for (int j = 1; j <= P; j++) { //parallels, for theta
+		for (int i = 0; i < M; i++) { //meridians, for phi
 			double currTheta = j * theta;
 			double currPhi = i * phi;
 			Vertex* v = new Vertex();
@@ -63,20 +69,43 @@ void Object3D::generateUVSphere(int M, int P, double R) // M-meridians(vertices)
 		}
 	}
 
-	// Store data in parallel bands
-	for (int j = 0; j < P; j++) { 
-		for (int i = 0; i < M; i++) { //triangles share v1-v3 edge
-			Vertex* v1 = vertices[j * (M + 1) + i]; //upper left
-			Vertex* v2 = vertices[(j + 1) * (M + 1) + i]; //lower left
-			Vertex* v3 = vertices[(j + 1) * (M + 1) + (i + 1)]; //lower right
-			Vertex* v4 = vertices[j * (M + 1) + (i + 1)]; //upper right
+	Vertex* southPole = new Vertex();
+	southPole->x = 0; southPole->y = -R; southPole->z = 0;
+	southPole->id = idx;
+	vertices.push_back(southPole);
+	idx++;
 
-			triangulateFace(v1->id, v2->id, v3->id);
-			triangulateFace(v3->id, v4->id, v1->id); 
+	// Triangulation - store data in parallel bands
+	int northId = 0;
+	for (int i = 0; i < M; i++) {
+		int curr = 1 + i;
+		int next = 1 + (1 + i) % M;
+
+		triangulateFace(next, northId, curr); //CCW
+	}
+
+	for (int j = 0; j < P - 1; j++) { 
+		for (int i = 0; i < M; i++) { //triangles share v1-v3 edge
+			int v1 = 1 + j * M + i; //upper left
+			int v2 =  1 + (j + 1) * M + i; //lower left
+			int v3 = 1 + (j + 1) * M + (i + 1) % M; //lower right
+			int v4 = 1 + j * M + (i + 1) % M; //upper right
+
+			triangulateFace(v3, v1, v2);
+			triangulateFace(v1, v3, v4); 
 		}
 	}
 
-	pairing();
+	int southId = vertices.size() - 1;
+	int lastRingStart = southId - M; //idx v 1D vektori
+	for (int i = 0; i < M; i++) {
+		int curr = lastRingStart + i;
+		int next = lastRingStart + (i + 1) % M;
+
+		triangulateFace(next, curr, southId); 
+	}
+
+	//pairing();
 	computeVertexNormals();
 }
 

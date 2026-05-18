@@ -385,7 +385,7 @@ QVector<Edge> ViewerWidget::createEdgeTable(const QVector<QPoint>& points, int& 
 	std::sort(edgeTable.begin(), edgeTable.end(), [](const Edge& a, const Edge& b) {
 		if (a.yMin == b.yMin) return a.x < b.x;
 		return a.yMin < b.yMin; // sorting by yMin
-		});
+	});
 
 	return edgeTable;
 }
@@ -485,7 +485,8 @@ void ViewerWidget::fillBaseTriangle(TVertex t0, TVertex t1, TVertex t2, TVertex 
 {
 	//t0, t1, t2 - vertices of the current subtriangle
 	//orig0, orig1, orig2 - used for calculating pixel color
-	if (t0.point.y() == t1.point.y()) return;
+
+	if (t0.point.y() == t1.point.y()) return; 
 
 	double w1 = static_cast<double>(t1.point.x() - t0.point.x()) / (t1.point.y() - t0.point.y());
 	double w2 = static_cast<double>(t2.point.x() - t0.point.x()) / (t2.point.y() - t0.point.y());
@@ -1110,7 +1111,7 @@ void ViewerWidget::draw3DObject(const Object3D& object, double theta, double phi
 						QColor c2 = computeColor(triangle.v2, n2, viewSpaceLight, globalMaterial);
 						QColor c3 = computeColor(triangle.v3, n3, viewSpaceLight, globalMaterial);
 
-						rasterizeTriangle(p1, p2, p3, triangle.v1.z(), triangle.v2.z(), triangle.v3.z(), { c2, c3, c1 });
+						rasterizeTriangle(p1, p2, p3, triangle.v1.z(), triangle.v2.z(), triangle.v3.z(), { c1, c2, c3 });
 					}
 				}
 				else {
@@ -1191,6 +1192,11 @@ QVector<Triangle3D> ViewerWidget::clipTriangleNear(QVector3D P1, QVector3D P2, Q
 	for (int i = 0; i < 3; i++) {
 		inside[i] = (points[i].z() <= nearZ);
 		if (inside[i]) insideCount++;
+	}
+
+	if (insideCount == 3) {
+		result.append({ P1, P2, P3 });
+		return result;
 	}
 
 	//Sutherland-Hodgman simple version
